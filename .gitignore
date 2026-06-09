@@ -31,3 +31,5 @@ npm-debug.log*
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+dvl-dashboard-2ab45998367c.json
+.env
