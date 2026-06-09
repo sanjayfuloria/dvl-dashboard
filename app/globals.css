@@ -1,0 +1,216 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── DVL Design Tokens ─────────────────────────────────────────── */
+:root {
+  /* Brand */
+  --dvl-indigo:      #1a1a2e;
+  --dvl-purple:      #7c6af7;
+  --dvl-purple-light:#a695fa;
+  --dvl-purple-dim:  #f0eeff;
+  --dvl-teal:        #0d9488;
+  --dvl-teal-light:  #ccfbf1;
+  --dvl-amber:       #d97706;
+  --dvl-amber-light: #fef3c7;
+
+  /* Surface */
+  --surface:         #f7f6f3;
+  --surface-card:    #ffffff;
+  --surface-raised:  #fafaf8;
+
+  /* Text */
+  --text-primary:    #1a1a2e;
+  --text-secondary:  #6b7280;
+  --text-muted:      #9ca3af;
+
+  /* Border */
+  --border:          #e5e7eb;
+  --border-strong:   #d1d5db;
+
+  /* Sidebar width */
+  --sidebar-w:       240px;
+}
+
+/* ── Base ───────────────────────────────────────────────────────── */
+@layer base {
+  * { @apply border-border; }
+
+  body {
+    @apply bg-[var(--surface)] text-[var(--text-primary)];
+    font-family: var(--font-inter), 'Inter', system-ui, sans-serif;
+  }
+
+  h1 { @apply text-2xl font-semibold tracking-tight; }
+  h2 { @apply text-xl font-semibold tracking-tight; }
+  h3 { @apply text-base font-semibold; }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
+  ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+}
+
+/* ── Components ─────────────────────────────────────────────────── */
+@layer components {
+
+  /* Sidebar */
+  .sidebar {
+    @apply fixed left-0 top-0 h-full w-[var(--sidebar-w)] flex flex-col;
+    background: var(--dvl-indigo);
+    z-index: 40;
+  }
+  .sidebar-logo {
+    @apply px-6 py-5 border-b;
+    border-color: rgba(255,255,255,0.08);
+  }
+  .sidebar-nav-item {
+    @apply flex items-center gap-3 px-4 py-2.5 mx-2 rounded-lg text-sm font-medium transition-colors duration-150;
+    color: rgba(255,255,255,0.6);
+  }
+  .sidebar-nav-item:hover {
+    @apply text-white;
+    background: rgba(255,255,255,0.08);
+  }
+  .sidebar-nav-item.active {
+    @apply text-white;
+    background: var(--dvl-purple);
+  }
+  .sidebar-section-label {
+    @apply px-6 pt-5 pb-1 text-[10px] font-semibold tracking-widest uppercase;
+    color: rgba(255,255,255,0.3);
+  }
+
+  /* Main content area */
+  .main-content {
+    margin-left: var(--sidebar-w);
+    @apply min-h-screen;
+  }
+  .page-header {
+    @apply sticky top-0 z-30 flex items-center justify-between px-8 py-4 bg-[var(--surface-card)] border-b;
+    border-color: var(--border);
+  }
+  .page-body {
+    @apply px-8 py-6;
+  }
+
+  /* Cards */
+  .card {
+    @apply bg-[var(--surface-card)] rounded-xl border p-5;
+    border-color: var(--border);
+  }
+  .card-sm {
+    @apply bg-[var(--surface-card)] rounded-lg border p-4;
+    border-color: var(--border);
+  }
+  .stat-card {
+    @apply card flex flex-col gap-1;
+  }
+
+  /* Phase badge */
+  .phase-badge {
+    @apply inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full;
+  }
+
+  /* Progress bar */
+  .progress-bar {
+    @apply h-1.5 rounded-full bg-gray-100 overflow-hidden;
+  }
+  .progress-fill {
+    @apply h-full rounded-full transition-all duration-500;
+    background: var(--dvl-purple);
+  }
+
+  /* Buttons */
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors;
+    background: var(--dvl-purple);
+  }
+  .btn-primary:hover { background: var(--dvl-purple-light); }
+  .btn-primary:disabled { @apply opacity-50 cursor-not-allowed; }
+
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors border;
+    color: var(--text-primary);
+    border-color: var(--border-strong);
+    background: var(--surface-card);
+  }
+  .btn-secondary:hover { background: var(--surface-raised); }
+
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors;
+    color: var(--text-secondary);
+  }
+  .btn-ghost:hover { background: var(--surface-raised); color: var(--text-primary); }
+
+  /* Form inputs */
+  .form-input {
+    @apply w-full px-3 py-2.5 rounded-lg border text-sm transition-colors outline-none;
+    border-color: var(--border-strong);
+    background: var(--surface-card);
+    color: var(--text-primary);
+  }
+  .form-input:focus {
+    border-color: var(--dvl-purple);
+    box-shadow: 0 0 0 3px rgba(124,106,247,0.12);
+  }
+  .form-label {
+    @apply block text-sm font-medium mb-1.5;
+    color: var(--text-primary);
+  }
+
+  /* Table */
+  .data-table {
+    @apply w-full text-sm;
+  }
+  .data-table th {
+    @apply text-left px-4 py-3 font-medium border-b text-xs uppercase tracking-wide;
+    color: var(--text-secondary);
+    border-color: var(--border);
+    background: var(--surface-raised);
+  }
+  .data-table td {
+    @apply px-4 py-3.5 border-b;
+    border-color: var(--border);
+  }
+  .data-table tr:last-child td { @apply border-0; }
+  .data-table tbody tr:hover { background: var(--surface-raised); }
+
+  /* Tag / badge */
+  .tag {
+    @apply inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-md;
+  }
+  .tag-purple { @apply tag; background: var(--dvl-purple-dim); color: var(--dvl-purple); }
+  .tag-teal   { @apply tag; background: var(--dvl-teal-light); color: var(--dvl-teal); }
+  .tag-amber  { @apply tag; background: var(--dvl-amber-light); color: var(--dvl-amber); }
+  .tag-gray   { @apply tag bg-gray-100 text-gray-600; }
+  .tag-green  { @apply tag bg-green-100 text-green-700; }
+  .tag-red    { @apply tag bg-red-100 text-red-600; }
+
+  /* Empty state */
+  .empty-state {
+    @apply flex flex-col items-center justify-center py-16 text-center;
+    color: var(--text-muted);
+  }
+
+  /* Score ring */
+  .score-ring {
+    @apply relative inline-flex items-center justify-center;
+  }
+}
+
+/* ── Utilities ──────────────────────────────────────────────────── */
+@layer utilities {
+  .text-brand { color: var(--dvl-purple); }
+  .bg-brand   { background: var(--dvl-purple); }
+  .border-brand { border-color: var(--dvl-purple); }
+  .font-sans  { font-family: var(--font-inter), 'Inter', system-ui, sans-serif; }
+
+  /* Smooth page transitions */
+  .page-enter { animation: fadeSlideIn 0.18s ease-out both; }
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+}

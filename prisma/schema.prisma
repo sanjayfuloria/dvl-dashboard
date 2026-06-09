@@ -1,0 +1,419 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Auth (NextAuth v5) ──────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  role          Role      @default(STUDENT)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+
+  // Role-specific relations
+  studentProfile  StudentProfile?
+  facultyProfile  FacultyProfile?
+  mentorProfile   MentorProfile?
+
+  // Shared
+  notifications   Notification[]
+  activityLogs    ActivityLog[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+  @@unique([identifier, token])
+}
+
+// ─── Roles ───────────────────────────────────────────────────────────────────
+
+enum Role {
+  STUDENT
+  FACULTY
+  MENTOR
+  ADMIN
+}
+
+// ─── Profiles ────────────────────────────────────────────────────────────────
+
+model StudentProfile {
+  id          String  @id @default(cuid())
+  userId      String  @unique
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rollNumber  String?
+  programme   String?  // MBA, BBA, etc.
+  batch       String?  // 2024-26
+
+  teamMembers TeamMember[]
+}
+
+model FacultyProfile {
+  id          String  @id @default(cuid())
+  userId      String  @unique
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department  String?
+  designation String?
+
+  assignedTeams Team[] @relation("FacultyGuide")
+  evaluations   Evaluation[]
+  reflectionComments ReflectionComment[]
+}
+
+model MentorProfile {
+  id           String  @id @default(cuid())
+  userId       String  @unique
+  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organisation String?
+  designation  String?
+  expertise    String[]
+  industry     String?
+  availability String?
+
+  assignedTeams Team[]         @relation("IndustryMentor")
+  sessions      MentorSession[]
+  evaluations   Evaluation[]
+  reflectionComments ReflectionComment[]
+}
+
+// ─── Teams & Projects ────────────────────────────────────────────────────────
+
+enum Course {
+  MPB
+  MDT
+}
+
+enum ProjectPhase {
+  IDEATION
+  PROTOTYPE
+  MVP
+  COMPLETED
+}
+
+enum ProjectHealth {
+  ON_TRACK
+  AT_RISK
+  DELAYED
+}
+
+model Team {
+  id              String        @id @default(cuid())
+  name            String
+  ventureName     String?
+  course          Course
+  sector          String?
+  currentPhase    ProjectPhase  @default(IDEATION)
+  health          ProjectHealth @default(ON_TRACK)
+  progressPct     Int           @default(0)
+  problemStatement String?
+  targetUsers     String?
+  businessOpportunity String?
+  aiComponents    String?
+  technologyStack String?
+  driveFolderId   String?       // Google Drive folder ID
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  facultyGuideId  String?
+  facultyGuide    FacultyProfile? @relation("FacultyGuide", fields: [facultyGuideId], references: [id])
+  mentorId        String?
+  mentor          MentorProfile?  @relation("IndustryMentor", fields: [mentorId], references: [id])
+
+  members         TeamMember[]
+  milestones      Milestone[]
+  deliverables    Deliverable[]
+  evaluations     Evaluation[]
+  aiLogs          AIBuildLog[]
+  reflections     Reflection[]
+  mentorSessions  MentorSession[]
+  demoDay         DemoShowcase?
+  workspaceFiles  WorkspaceFile[]
+}
+
+model TeamMember {
+  id               String         @id @default(cuid())
+  teamId           String
+  team             Team           @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  studentProfileId String
+  student          StudentProfile @relation(fields: [studentProfileId], references: [id])
+  role             String?        // e.g. "Team Lead", "Developer"
+  joinedAt         DateTime       @default(now())
+
+  @@unique([teamId, studentProfileId])
+}
+
+// ─── Milestones & Deliverables ───────────────────────────────────────────────
+
+enum MilestoneStatus {
+  PENDING
+  IN_PROGRESS
+  SUBMITTED
+  REVIEWED
+  APPROVED
+}
+
+model Milestone {
+  id          String          @id @default(cuid())
+  teamId      String
+  team        Team            @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  phase       ProjectPhase
+  title       String
+  description String?
+  dueDate     DateTime?
+  status      MilestoneStatus @default(PENDING)
+  completedAt DateTime?
+  createdAt   DateTime        @default(now())
+
+  deliverables Deliverable[]
+}
+
+model Deliverable {
+  id          String          @id @default(cuid())
+  teamId      String
+  team        Team            @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  milestoneId String?
+  milestone   Milestone?      @relation(fields: [milestoneId], references: [id])
+  title       String
+  type        String          // Problem Brief, BMC, Prototype Link, Pitch Deck, etc.
+  fileUrl     String?
+  driveFileId String?
+  submittedAt DateTime?
+  status      MilestoneStatus @default(PENDING)
+  feedback    String?
+  createdAt   DateTime        @default(now())
+}
+
+// ─── Evaluations ─────────────────────────────────────────────────────────────
+
+model Evaluation {
+  id              String       @id @default(cuid())
+  teamId          String
+  team            Team         @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  phase           ProjectPhase
+  evaluatorType   EvaluatorType
+  facultyId       String?
+  faculty         FacultyProfile? @relation(fields: [facultyId], references: [id])
+  mentorId        String?
+  mentor          MentorProfile?  @relation(fields: [mentorId], references: [id])
+
+  // Phase 1 criteria
+  problemRelevance    Int?  // 1-10
+  validationQuality   Int?
+  businessOpportunity Int?
+  clarityOfThinking   Int?
+
+  // Phase 2 criteria
+  prototypeQuality    Int?
+  userCentricDesign   Int?
+  feasibility         Int?
+  aiIntegration       Int?
+
+  // Phase 3 criteria
+  mvpQuality          Int?
+  productFunctionality Int?
+  innovation          Int?
+  adoptionLogic       Int?
+  scalability         Int?
+
+  // Demo Day
+  problemSignificance Int?
+  productQuality      Int?
+  aiUtilisation       Int?
+  businessPotential   Int?
+
+  totalScore      Float?
+  feedback        String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+enum EvaluatorType {
+  FACULTY
+  MENTOR
+  JURY
+}
+
+// ─── AI Build Log ─────────────────────────────────────────────────────────────
+
+model AIBuildLog {
+  id               String   @id @default(cuid())
+  teamId           String
+  team             Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  activity         String
+  toolUsed         String   // ChatGPT, Claude, Cursor, etc.
+  purpose          String?
+  promptSummary    String?
+  outputGenerated  String?
+  humanValidation  String?
+  finalImplementation String?
+  loggedAt         DateTime @default(now())
+}
+
+// ─── Reflections ─────────────────────────────────────────────────────────────
+
+model Reflection {
+  id                  String   @id @default(cuid())
+  teamId              String
+  team                Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  month               String   // e.g. "July 2025"
+  whatAchieved        String?
+  assumptionsValidated String?
+  assumptionsFailed   String?
+  userLearnings       String?
+  mentorRecommendations String?
+  aiContributions     String?
+  nextSteps           String?
+  submittedAt         DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  comments ReflectionComment[]
+}
+
+model ReflectionComment {
+  id           String          @id @default(cuid())
+  reflectionId String
+  reflection   Reflection      @relation(fields: [reflectionId], references: [id], onDelete: Cascade)
+  facultyId    String?
+  faculty      FacultyProfile? @relation(fields: [facultyId], references: [id])
+  mentorId     String?
+  mentor       MentorProfile?  @relation(fields: [mentorId], references: [id])
+  comment      String
+  createdAt    DateTime        @default(now())
+}
+
+// ─── Mentor Sessions ─────────────────────────────────────────────────────────
+
+model MentorSession {
+  id          String        @id @default(cuid())
+  teamId      String
+  team        Team          @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  mentorId    String
+  mentor      MentorProfile @relation(fields: [mentorId], references: [id])
+  meetingDate DateTime
+  participants String[]
+  summary     String?
+  recommendations String?
+  actionItems String?
+  createdAt   DateTime      @default(now())
+}
+
+// ─── Knowledge Repository ─────────────────────────────────────────────────────
+
+model Resource {
+  id          String       @id @default(cuid())
+  title       String
+  type        ResourceType
+  description String?
+  fileUrl     String?
+  driveFileId String?
+  tags        String[]
+  course      Course?
+  industry    String?
+  technology  String?
+  framework   String?
+  createdById String?
+  createdAt   DateTime     @default(now())
+}
+
+enum ResourceType {
+  READING
+  CASE
+  FRAMEWORK
+  TEMPLATE
+  TOOLKIT
+  PROMPT_LIBRARY
+  AI_GUIDE
+  PRODUCT_GUIDE
+}
+
+// ─── Demo Day ─────────────────────────────────────────────────────────────────
+
+model DemoShowcase {
+  id          String   @id @default(cuid())
+  teamId      String   @unique
+  team        Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  mvpUrl      String?
+  demoVideoUrl String?
+  pitchDeckUrl String?
+  description String?
+  rank        Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ─── Workspace Files ──────────────────────────────────────────────────────────
+
+model WorkspaceFile {
+  id          String   @id @default(cuid())
+  teamId      String
+  team        Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  name        String
+  type        String   // meeting-notes, customer-interview, wireframe, etc.
+  driveFileId String?
+  fileUrl     String?
+  uploadedAt  DateTime @default(now())
+}
+
+// ─── Notifications ───────────────────────────────────────────────────────────
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+}
+
+// ─── Activity Log ────────────────────────────────────────────────────────────
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  entity    String?
+  entityId  String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+}
