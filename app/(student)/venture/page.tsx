@@ -239,3 +239,4 @@ export default function VenturePage() {
     </div>
   )
 }
+// FileUpload is available for workspace files

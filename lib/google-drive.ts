@@ -1,62 +1,86 @@
-/**
- * Google Drive integration for DVL Dashboard
- * Uses a Service Account (no OAuth popup needed for server-side ops)
- *
- * Setup:
- * 1. Go to https://console.cloud.google.com
- * 2. Create a project → Enable Google Drive API
- * 3. Create a Service Account → Download JSON key
- * 4. Share your root Google Drive folder with the service account email
- * 5. Set GOOGLE_SERVICE_ACCOUNT_EMAIL, GOOGLE_SERVICE_ACCOUNT_KEY, GOOGLE_DRIVE_ROOT_FOLDER_ID in .env
- */
+import { GoogleAuth } from 'google-auth-library'
 
-const ROOT_FOLDER_ID = process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID!
-const SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL!
-const SERVICE_ACCOUNT_KEY = process.env.GOOGLE_SERVICE_ACCOUNT_KEY!
+function getAuth() {
+  return new GoogleAuth({
+    credentials: {
+      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      private_key: process.env.GOOGLE_SERVICE_ACCOUNT_KEY?.replace(/\\n/g, '\n'),
+    },
+    scopes: ['https://www.googleapis.com/auth/drive'],
+  })
+}
 
 async function getAccessToken(): Promise<string> {
-  // Minimal JWT-based service account token (no googleapis library needed)
-  const header = btoa(JSON.stringify({ alg: 'RS256', typ: 'JWT' }))
-  const now = Math.floor(Date.now() / 1000)
-  const claims = {
-    iss: SERVICE_ACCOUNT_EMAIL,
-    scope: 'https://www.googleapis.com/auth/drive',
-    aud: 'https://oauth2.googleapis.com/token',
-    exp: now + 3600,
-    iat: now,
-  }
-  const payload = btoa(JSON.stringify(claims))
-
-  // Sign with private key (requires a proper JWT library in production)
-  // For production, install: npm install google-auth-library
-  // and replace this with:
-  //   const auth = new GoogleAuth({ credentials: JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON) })
-  //   const client = await auth.getClient()
-  //   const token = await client.getAccessToken()
-  //   return token.token!
-
-  throw new Error('Configure google-auth-library for production use. See comments in lib/google-drive.ts')
+  const auth = getAuth()
+  const client = await auth.getClient()
+  const token = await client.getAccessToken()
+  return token.token!
 }
 
 export async function createTeamDriveFolder(teamName: string, ventureName: string): Promise<string | null> {
   try {
     const token = await getAccessToken()
+    const rootFolderId = process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID!
+
+    // Create main team folder
     const res = await fetch('https://www.googleapis.com/drive/v3/files', {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        name: `${teamName} — ${ventureName}`,
+        name: `${teamName} — ${ventureName || teamName}`,
         mimeType: 'application/vnd.google-apps.folder',
-        parents: [ROOT_FOLDER_ID],
+        parents: [rootFolderId],
       }),
     })
-    const data = await res.json()
-    return data.id ?? null
+    const folder = await res.json()
+    if (!folder.id) return null
+
+    // Create subfolders
+    const subfolders = ['Deliverables', 'Meeting Notes', 'Prototypes', 'Research', 'Presentations']
+    for (const name of subfolders) {
+      await fetch('https://www.googleapis.com/drive/v3/files', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          mimeType: 'application/vnd.google-apps.folder',
+          parents: [folder.id],
+        }),
+      })
+    }
+
+    return folder.id
   } catch (err) {
     console.error('Drive folder creation failed:', err)
+    return null
+  }
+}
+
+export async function getOrCreateSubfolder(parentFolderId: string, name: string): Promise<string | null> {
+  try {
+    const token = await getAccessToken()
+    // Check if subfolder exists
+    const searchRes = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q=name='${name}' and '${parentFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false&fields=files(id,name)`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+    const searchData = await searchRes.json()
+    if (searchData.files?.length > 0) return searchData.files[0].id
+
+    // Create if not exists
+    const res = await fetch('https://www.googleapis.com/drive/v3/files', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        mimeType: 'application/vnd.google-apps.folder',
+        parents: [parentFolderId],
+      }),
+    })
+    const folder = await res.json()
+    return folder.id ?? null
+  } catch (err) {
+    console.error('Subfolder creation failed:', err)
     return null
   }
 }
@@ -69,10 +93,8 @@ export async function uploadFileToDrive(
 ): Promise<{ id: string; webViewLink: string } | null> {
   try {
     const token = await getAccessToken()
-
-    // Upload metadata
     const metadata = JSON.stringify({ name: fileName, parents: [folderId] })
-    const boundary = '-------314159265358979323846'
+    const boundary = 'dvl_boundary_314159'
     const body = [
       `--${boundary}`,
       'Content-Type: application/json; charset=UTF-8',
@@ -80,19 +102,19 @@ export async function uploadFileToDrive(
       metadata,
       `--${boundary}`,
       `Content-Type: ${mimeType}`,
+      'Content-Transfer-Encoding: base64',
       '',
       fileBuffer.toString('base64'),
       `--${boundary}--`,
     ].join('\r\n')
 
     const res = await fetch(
-      'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink',
+      'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink,name',
       {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': `multipart/related; boundary="${boundary}"`,
-          'Content-Length': body.length.toString(),
         },
         body,
       }
@@ -104,10 +126,10 @@ export async function uploadFileToDrive(
   }
 }
 
-export async function getDriveFileLink(fileId: string): Promise<string> {
-  return `https://drive.google.com/file/d/${fileId}/view`
+export function getDriveFolderLink(folderId: string): string {
+  return `https://drive.google.com/drive/folders/${folderId}`
 }
 
-export async function getDriveFolderLink(folderId: string): Promise<string> {
-  return `https://drive.google.com/drive/folders/${folderId}`
+export function getDriveFileLink(fileId: string): string {
+  return `https://drive.google.com/file/d/${fileId}/view`
 }

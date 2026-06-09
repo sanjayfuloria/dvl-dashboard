@@ -15,13 +15,8 @@ export function CreateTeamButton({ faculty, mentors, students }: Props) {
   const [loading, setLoading] = useState(false)
   const [selectedStudents, setSelectedStudents] = useState<string[]>([])
   const [form, setForm] = useState({
-    name: '',
-    ventureName: '',
-    course: 'MPB',
-    sector: '',
-    facultyGuideId: '',
-    mentorId: '',
-    problemStatement: '',
+    name: '', ventureName: '', course: 'MPB', sector: '',
+    facultyGuideId: '', mentorId: '', problemStatement: '',
   })
   const router = useRouter()
 
@@ -32,7 +27,7 @@ export function CreateTeamButton({ faculty, mentors, students }: Props) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
-    const res = await fetch('/api/teams', {
+    const res = await fetch('/dvl/api/teams', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -45,6 +40,8 @@ export function CreateTeamButton({ faculty, mentors, students }: Props) {
     setLoading(false)
     if (res.ok) {
       setOpen(false)
+      setForm({ name: '', ventureName: '', course: 'MPB', sector: '', facultyGuideId: '', mentorId: '', problemStatement: '' })
+      setSelectedStudents([])
       router.refresh()
     }
   }
@@ -56,16 +53,52 @@ export function CreateTeamButton({ faculty, mentors, students }: Props) {
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-             style={{ background: 'rgba(0,0,0,0.4)' }}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b" style={{ borderColor: 'var(--border)' }}>
-              <h2 className="text-lg font-semibold">Create new team</h2>
-              <button onClick={() => setOpen(false)} className="btn-ghost p-2"><X className="w-4 h-4" /></button>
+        <>
+          {/* Backdrop */}
+          <div
+            onClick={() => setOpen(false)}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 50,
+              background: 'rgba(0,0,0,0.5)',
+            }}
+          />
+          {/* Modal - centered with flexbox on viewport */}
+          <div style={{
+            position: 'fixed',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            zIndex: 51,
+            width: '90vw',
+            maxWidth: 640,
+            maxHeight: '85vh',
+            overflowY: 'auto',
+            background: 'white',
+            borderRadius: 16,
+            boxShadow: '0 24px 80px rgba(0,0,0,0.3)',
+          }}>
+            {/* Header */}
+            <div style={{
+              position: 'sticky', top: 0, background: 'white',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '20px 24px',
+              borderBottom: '1px solid var(--border)',
+              zIndex: 1,
+            }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>Create new team</h2>
+                <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-secondary)' }}>
+                  Fill in the team details below
+                </p>
+              </div>
+              <button onClick={() => setOpen(false)} className="btn-ghost p-2">
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            {/* Form body */}
+            <form onSubmit={handleSubmit} style={{ padding: '24px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
                 <div>
                   <label className="form-label">Team name *</label>
                   <input required className="form-input" value={form.name}
@@ -80,7 +113,7 @@ export function CreateTeamButton({ faculty, mentors, students }: Props) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
                 <div>
                   <label className="form-label">Course *</label>
                   <select required className="form-input" value={form.course}
@@ -97,7 +130,7 @@ export function CreateTeamButton({ faculty, mentors, students }: Props) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
                 <div>
                   <label className="form-label">Faculty guide</label>
                   <select className="form-input" value={form.facultyGuideId}
@@ -124,49 +157,61 @@ export function CreateTeamButton({ faculty, mentors, students }: Props) {
                 </div>
               </div>
 
-              <div>
+              <div style={{ marginBottom: 16 }}>
                 <label className="form-label">Problem statement</label>
-                <textarea rows={2} className="form-input resize-none" value={form.problemStatement}
+                <textarea rows={3} className="form-input" style={{ resize: 'none' }}
+                  value={form.problemStatement}
                   onChange={e => setForm(f => ({ ...f, problemStatement: e.target.value }))}
                   placeholder="Describe the problem this team will tackle…" />
               </div>
 
-              {/* Student selection */}
-              <div>
-                <label className="form-label">Add students ({selectedStudents.length} selected)</label>
-                <div className="max-h-48 overflow-y-auto border rounded-lg divide-y"
-                     style={{ borderColor: 'var(--border)' }}>
-                  {students.map(s => (
-                    <label key={s.id} className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-gray-50">
-                      <input
-                        type="checkbox"
+              <div style={{ marginBottom: 24 }}>
+                <label className="form-label">
+                  Add students ({selectedStudents.length} selected)
+                </label>
+                <div style={{
+                  maxHeight: 180, overflowY: 'auto',
+                  border: '1px solid var(--border)', borderRadius: 8,
+                }}>
+                  {students.length > 0 ? students.map((s, i) => (
+                    <label key={s.id} style={{
+                      display: 'flex', alignItems: 'center', gap: 10,
+                      padding: '10px 12px', cursor: 'pointer',
+                      borderBottom: i < students.length - 1 ? '1px solid var(--border)' : 'none',
+                      background: selectedStudents.includes(s.id) ? 'var(--dvl-purple-dim)' : 'transparent',
+                    }}>
+                      <input type="checkbox"
                         checked={selectedStudents.includes(s.id)}
-                        onChange={() => toggleStudent(s.id)}
-                        className="rounded"
-                      />
+                        onChange={() => toggleStudent(s.id)} />
                       <div>
-                        <p className="text-sm font-medium">{s.user.name ?? '—'}</p>
-                        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{s.user.email}</p>
+                        <p style={{ margin: 0, fontSize: 13, fontWeight: 500 }}>{s.user.name ?? '—'}</p>
+                        <p style={{ margin: 0, fontSize: 11, color: 'var(--text-muted)' }}>{s.user.email}</p>
                       </div>
                     </label>
-                  ))}
-                  {students.length === 0 && (
-                    <p className="text-sm text-center py-4" style={{ color: 'var(--text-muted)' }}>
+                  )) : (
+                    <p style={{ padding: 16, textAlign: 'center', fontSize: 13, color: 'var(--text-muted)' }}>
                       No students found. Add student users first.
                     </p>
                   )}
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setOpen(false)} className="btn-secondary flex-1">Cancel</button>
-                <button type="submit" disabled={loading} className="btn-primary flex-1">
+              {/* Sticky footer buttons */}
+              <div style={{
+                position: 'sticky', bottom: 0, background: 'white',
+                paddingTop: 16, borderTop: '1px solid var(--border)',
+                display: 'flex', gap: 12,
+              }}>
+                <button type="button" onClick={() => setOpen(false)} className="btn-secondary" style={{ flex: 1 }}>
+                  Cancel
+                </button>
+                <button type="submit" disabled={loading} className="btn-primary" style={{ flex: 1 }}>
                   {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating…</> : 'Create team'}
                 </button>
               </div>
             </form>
           </div>
-        </div>
+        </>
       )}
     </>
   )

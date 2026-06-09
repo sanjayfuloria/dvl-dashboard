@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 import {
   Zap, LayoutDashboard, Rocket, CheckSquare, Bot, BookOpen,
   Users, ClipboardList, BarChart3, Settings, LogOut, ChevronRight,
-  Briefcase, FileText, Star, Home, UserCog, Library, Trophy,
+  Briefcase, FileText, Star, Home, UserCog, Library, Trophy, Lock,
   TrendingUp, Calendar, FolderOpen
 } from 'lucide-react'
 
@@ -42,6 +42,7 @@ const studentNav: NavSection[] = [
     items: [
       { href: '/resources', label: 'Knowledge Hub', icon: Library },
       { href: '/portfolio', label: 'My Portfolio', icon: Star },
+    { href: '/change-password', label: 'Change Password', icon: Lock },
     ],
   },
 ]
@@ -104,6 +105,7 @@ const adminNav: NavSection[] = [
     label: 'System',
     items: [
       { href: '/admin/settings', label: 'Settings', icon: Settings },
+    { href: '/change-password', label: 'Change Password', icon: Lock },
     ],
   },
 ]
