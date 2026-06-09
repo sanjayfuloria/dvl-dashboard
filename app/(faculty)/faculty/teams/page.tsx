@@ -1,4 +1,4 @@
-import { auth } from '@/auth'
+import { getSession } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { phaseLabel, phaseColor, healthColor, healthLabel } from '@/lib/utils'
@@ -8,11 +8,11 @@ import { ChevronRight } from 'lucide-react'
 export const metadata = { title: 'My Teams' }
 
 export default async function FacultyTeamsPage() {
-  const session = await auth()
-  if (!session?.user?.id) return null
+  const session = await getSession()
+  if (!session?.id) return null
 
   const profile = await prisma.facultyProfile.findUnique({
-    where: { userId: session.user.id },
+    where: { userId: session.id },
     include: {
       assignedTeams: {
         include: {

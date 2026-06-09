@@ -1,4 +1,4 @@
-import { auth } from '@/auth'
+import { getSession } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { formatDate, phaseLabel, phaseColor, statusColor } from '@/lib/utils'
@@ -34,9 +34,9 @@ async function getTeamMilestones(userId: string) {
 }
 
 export default async function MilestonesPage() {
-  const session = await auth()
-  if (!session?.user?.id) return null
-  const team = await getTeamMilestones(session.user.id)
+  const session = await getSession()
+  if (!session?.id) return null
+  const team = await getTeamMilestones(session.id)
 
   const milestonesByPhase = PHASES.reduce((acc, phase) => {
     acc[phase] = team?.milestones.filter((m) => m.phase === phase) ?? []

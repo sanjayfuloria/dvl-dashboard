@@ -1,15 +1,15 @@
-import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
+import { getSession } from '@/lib/session'
 import { Sidebar } from '@/components/layout/Sidebar'
 
 export default async function FacultyLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth()
-  if (!session?.user) redirect('/login')
-  if (session.user.role !== 'FACULTY' && session.user.role !== 'ADMIN') redirect('/dashboard')
+  const user = await getSession()
+  if (!user) redirect('https://www.sanjayfuloria.tech/dvl/login')
+  if (user.role !== 'FACULTY' && user.role !== 'ADMIN') redirect('https://www.sanjayfuloria.tech/dvl/login')
 
   return (
     <div>
-      <Sidebar role="FACULTY" userName={session.user.name} userEmail={session.user.email} />
+      <Sidebar role="FACULTY" userName={user.name} userEmail={user.email} />
       <main className="main-content">{children}</main>
     </div>
   )

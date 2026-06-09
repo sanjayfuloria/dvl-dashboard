@@ -1,4 +1,4 @@
-import { auth } from '@/auth'
+import { getSession } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { phaseLabel, phaseColor, formatDate } from '@/lib/utils'
@@ -28,9 +28,9 @@ async function getMentorData(userId: string) {
 }
 
 export default async function MentorDashboard() {
-  const session = await auth()
-  if (!session?.user?.id) return null
-  const profile = await getMentorData(session.user.id)
+  const session = await getSession()
+  if (!session?.id) return null
+  const profile = await getMentorData(session.id)
   const teams = profile?.assignedTeams ?? []
 
   return (

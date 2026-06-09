@@ -1,59 +1,25 @@
-import { auth } from '@/auth'
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import * as jose from 'jose'
 
-const publicRoutes = ['/login', '/verify', '/api/auth']
+const PUBLIC = ['/login', '/verify', '/api/login', '/api/logout', '/api/auth', '/api/magic', '/api/verify']
 
-const roleRoutes: Record<string, string[]> = {
-  STUDENT: ['/dashboard', '/venture', '/milestones', '/ai-log', '/resources', '/portfolio', '/reflections'],
-  FACULTY: ['/faculty'],
-  MENTOR: ['/mentor'],
-  ADMIN: ['/admin'],
-}
-
-export default auth((req: NextRequest & { auth: any }) => {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
-  const session = req.auth
 
-  // Allow public routes
-  if (publicRoutes.some((route) => pathname.startsWith(route))) {
+  if (PUBLIC.some((r) => pathname.startsWith(r))) return NextResponse.next()
+
+  const token = req.cookies.get('dvl_session')?.value
+  if (!token) {
+    return NextResponse.redirect(new URL('https://www.sanjayfuloria.tech/dvl/login'))
+  }
+
+  try {
+    const secret = new TextEncoder().encode(process.env.AUTH_SECRET)
+    await jose.jwtVerify(token, secret)
     return NextResponse.next()
+  } catch {
+    return NextResponse.redirect(new URL('https://www.sanjayfuloria.tech/dvl/login'))
   }
-
-  // Require authentication
-  if (!session) {
-    const loginUrl = new URL('/login', req.url)
-    loginUrl.searchParams.set('callbackUrl', pathname)
-    return NextResponse.redirect(loginUrl)
-  }
-
-  const role = session.user?.role as string
-
-  // Admin can access everything
-  if (role === 'ADMIN') return NextResponse.next()
-
-  // Check role-based access
-  for (const [allowedRole, routes] of Object.entries(roleRoutes)) {
-    if (routes.some((r) => pathname.startsWith(r))) {
-      if (role !== allowedRole) {
-        // Redirect to their own dashboard
-        const home = getHomeForRole(role)
-        return NextResponse.redirect(new URL(home, req.url))
-      }
-    }
-  }
-
-  return NextResponse.next()
-})
-
-function getHomeForRole(role: string): string {
-  const homes: Record<string, string> = {
-    STUDENT: '/dashboard',
-    FACULTY: '/faculty/dashboard',
-    MENTOR: '/mentor/dashboard',
-    ADMIN: '/admin/dashboard',
-  }
-  return homes[role] ?? '/login'
 }
 
 export const config = {

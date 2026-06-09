@@ -30,6 +30,7 @@ model User {
   // Shared
   notifications   Notification[]
   activityLogs    ActivityLog[]
+  password        UserPassword?
 }
 
 model Account {
@@ -416,4 +417,11 @@ model ActivityLog {
   entityId  String?
   metadata  Json?
   createdAt DateTime @default(now())
+}
+
+model UserPassword {
+  id       String @id @default(cuid())
+  userId   String @unique
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hash     String
 }

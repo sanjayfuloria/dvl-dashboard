@@ -1,4 +1,4 @@
-import { auth } from '@/auth'
+import { getSession } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Trophy, ExternalLink, Users, Rocket } from 'lucide-react'
@@ -19,8 +19,8 @@ async function getDemoDayData() {
 }
 
 export default async function DemoDayPage() {
-  const session = await auth()
-  if (!session?.user) return null
+  const session = await getSession()
+  if (!session) return null
   const teams = await getDemoDayData()
 
   return (

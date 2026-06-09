@@ -1,4 +1,4 @@
-import { auth } from '@/auth'
+import { getSession } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { phaseLabel, phaseColor, healthColor, healthLabel, formatDate } from '@/lib/utils'
@@ -28,8 +28,8 @@ async function getAllTeams() {
 }
 
 export default async function AdminTeamsPage() {
-  const session = await auth()
-  if (!session?.user) return null
+  const session = await getSession()
+  if (!session) return null
   const { teams, facultyList, mentorList, studentList } = await getAllTeams()
 
   return (

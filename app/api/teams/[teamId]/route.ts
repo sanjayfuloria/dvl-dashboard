@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/auth'
+import { getSession } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
@@ -16,16 +16,17 @@ const schema = z.object({
   currentPhase: z.enum(['IDEATION', 'PROTOTYPE', 'MVP', 'COMPLETED']).optional(),
 })
 
-export async function PATCH(req: NextRequest, { params }: { params: { teamId: string } }) {
-  const session = await auth()
-  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ teamId: string }> }) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const { teamId } = await params
   const body = await req.json()
   const data = schema.safeParse(body)
   if (!data.success) return NextResponse.json({ error: 'Invalid' }, { status: 400 })
 
   const team = await prisma.team.update({
-    where: { id: params.teamId },
+    where: { id: teamId },
     data: data.data,
     include: {
       members: { include: { student: { include: { user: true } } } },
@@ -37,12 +38,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { teamId: st
   return NextResponse.json(team)
 }
 
-export async function GET(_req: NextRequest, { params }: { params: { teamId: string } }) {
-  const session = await auth()
-  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ teamId: string }> }) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const { teamId } = await params
   const team = await prisma.team.findUnique({
-    where: { id: params.teamId },
+    where: { id: teamId },
     include: {
       members: { include: { student: { include: { user: true } } } },
       milestones: true,

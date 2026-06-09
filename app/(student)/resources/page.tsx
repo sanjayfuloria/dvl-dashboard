@@ -1,4 +1,4 @@
-import { auth } from '@/auth'
+import { getSession } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Library, Search, ExternalLink, FileText, Wrench, BookOpen, Zap, Package, BookMarked } from 'lucide-react'
@@ -43,8 +43,8 @@ async function getResources() {
 }
 
 export default async function ResourcesPage() {
-  const session = await auth()
-  if (!session?.user) return null
+  const session = await getSession()
+  if (!session) return null
   const resources = await getResources()
 
   const byType = resources.reduce((acc, r) => {

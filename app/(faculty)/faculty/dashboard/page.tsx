@@ -1,4 +1,4 @@
-import { auth } from '@/auth'
+import { getSession } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { phaseLabel, phaseColor, healthColor, healthLabel, formatDate } from '@/lib/utils'
@@ -27,9 +27,9 @@ async function getFacultyData(userId: string) {
 }
 
 export default async function FacultyDashboard() {
-  const session = await auth()
-  if (!session?.user?.id) return null
-  const profile = await getFacultyData(session.user.id)
+  const session = await getSession()
+  if (!session?.id) return null
+  const profile = await getFacultyData(session.id)
   const teams = profile?.assignedTeams ?? []
 
   const pendingReviews = teams.flatMap((t) =>

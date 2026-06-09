@@ -1,13 +1,15 @@
-import { auth } from '@/auth'
+import { getSession } from '@/lib/session'
 import { redirect } from 'next/navigation'
-import { roleRedirect } from '@/lib/utils'
 
 export default async function RootPage() {
-  const session = await auth()
+  const user = await getSession()
+  if (!user) redirect('https://www.sanjayfuloria.tech/dvl/login')
 
-  if (!session?.user) {
-    redirect('/login')
+  const redirects: Record<string, string> = {
+    ADMIN: '/dvl/admin/dashboard',
+    FACULTY: '/dvl/faculty/dashboard',
+    MENTOR: '/dvl/mentor/dashboard',
+    STUDENT: '/dvl/dashboard',
   }
-
-  redirect(roleRedirect(session.user.role))
+  redirect('https://www.sanjayfuloria.tech' + (redirects[user.role] ?? '/dvl/dashboard'))
 }

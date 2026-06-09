@@ -1,19 +1,11 @@
-import { auth } from '@/auth'
+import { getSession } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { phaseLabel, phaseColor, healthLabel, healthColor, statusColor, formatDate } from '@/lib/utils'
-import {
-  Users, CheckSquare, FileText, Bot, TrendingUp, Star,
-  ExternalLink, FolderOpen, MessageSquare, Calendar, ChevronLeft
-} from 'lucide-react'
+import { Users, CheckSquare, Bot, TrendingUp, Calendar, ChevronLeft, FolderOpen, FileText, ExternalLink, MessageSquare } from 'lucide-react'
 import Link from 'next/link'
 import { EvaluationPanel } from '@/components/faculty/EvaluationPanel'
-
-export async function generateMetadata({ params }: { params: { teamId: string } }) {
-  const team = await prisma.team.findUnique({ where: { id: params.teamId } })
-  return { title: team?.ventureName ?? team?.name ?? 'Team' }
-}
 
 async function getTeamDetail(teamId: string) {
   return prisma.team.findUnique({
@@ -24,10 +16,7 @@ async function getTeamDetail(teamId: string) {
       deliverables: { orderBy: { createdAt: 'desc' } },
       evaluations: { orderBy: { createdAt: 'desc' } },
       aiLogs: { orderBy: { loggedAt: 'desc' } },
-      reflections: {
-        orderBy: { submittedAt: 'desc' },
-        include: { comments: { include: { faculty: { include: { user: true } } } } },
-      },
+      reflections: { orderBy: { submittedAt: 'desc' }, include: { comments: { include: { faculty: { include: { user: true } } } } } },
       mentorSessions: { orderBy: { meetingDate: 'desc' } },
       facultyGuide: { include: { user: true } },
       mentor: { include: { user: true } },
@@ -35,15 +24,15 @@ async function getTeamDetail(teamId: string) {
   })
 }
 
-export default async function TeamDetailPage({ params }: { params: { teamId: string } }) {
-  const session = await auth()
-  if (!session?.user?.id) return null
+export default async function TeamDetailPage({ params }: { params: Promise<{ teamId: string }> }) {
+  const session = await getSession()
+  if (!session?.id) return null
 
-  const team = await getTeamDetail(params.teamId)
+  const { teamId } = await params
+  const team = await getTeamDetail(teamId)
   if (!team) notFound()
 
-  const facultyProfile = await prisma.facultyProfile.findUnique({ where: { userId: session.user.id } })
-
+  const facultyProfile = await prisma.facultyProfile.findUnique({ where: { userId: session.id } })
   const toolCounts: Record<string, number> = {}
   team.aiLogs.forEach(l => { toolCounts[l.toolUsed] = (toolCounts[l.toolUsed] ?? 0) + 1 })
 
@@ -58,17 +47,14 @@ export default async function TeamDetailPage({ params }: { params: { teamId: str
           </Link>
         }
       />
-
       <div className="page-body space-y-6">
-        {/* Summary */}
         <div className="grid grid-cols-4 gap-4">
           <div className="card col-span-3">
             <div className="flex items-center gap-3 mb-4">
               <span className={`phase-badge ${phaseColor(team.currentPhase)}`}>{phaseLabel(team.currentPhase)}</span>
               <span className={`text-sm font-medium ${healthColor(team.health)}`}>{healthLabel(team.health)}</span>
               {team.driveFolderId && (
-                <a href={`https://drive.google.com/drive/folders/${team.driveFolderId}`}
-                   target="_blank" rel="noopener noreferrer"
+                <a href={`https://drive.google.com/drive/folders/${team.driveFolderId}`} target="_blank" rel="noopener noreferrer"
                    className="ml-auto text-xs text-brand flex items-center gap-1 hover:underline">
                   <FolderOpen className="w-3.5 h-3.5" /> Drive folder
                 </a>
@@ -82,12 +68,9 @@ export default async function TeamDetailPage({ params }: { params: { teamId: str
               <div className="progress-bar"><div className="progress-fill" style={{ width: `${team.progressPct}%` }} /></div>
             </div>
             {team.problemStatement && (
-              <p className="text-sm mt-3 p-3 rounded-lg" style={{ background: 'var(--surface-raised)' }}>
-                {team.problemStatement}
-              </p>
+              <p className="text-sm mt-3 p-3 rounded-lg" style={{ background: 'var(--surface-raised)' }}>{team.problemStatement}</p>
             )}
           </div>
-
           <div className="card space-y-3">
             {[
               { label: 'Milestones approved', value: team.milestones.filter(m => m.status === 'APPROVED').length },
@@ -103,13 +86,11 @@ export default async function TeamDetailPage({ params }: { params: { teamId: str
           </div>
         </div>
 
-        {/* Members */}
         <div className="card">
           <h3 className="mb-4 flex items-center gap-2"><Users className="w-4 h-4" /> Team members</h3>
           <div className="flex flex-wrap gap-3">
             {team.members.map(m => (
-              <div key={m.id} className="flex items-center gap-2.5 px-3 py-2 rounded-lg"
-                   style={{ background: 'var(--surface-raised)' }}>
+              <div key={m.id} className="flex items-center gap-2.5 px-3 py-2 rounded-lg" style={{ background: 'var(--surface-raised)' }}>
                 <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold text-white shrink-0"
                      style={{ background: 'var(--dvl-indigo)' }}>
                   {m.student.user.name?.charAt(0) ?? '?'}
@@ -123,122 +104,6 @@ export default async function TeamDetailPage({ params }: { params: { teamId: str
           </div>
         </div>
 
-        {/* Deliverables for review */}
-        {team.deliverables.filter(d => d.status === 'SUBMITTED').length > 0 && (
-          <div className="card border-2" style={{ borderColor: 'var(--dvl-amber)', background: '#fffbeb' }}>
-            <h3 className="mb-4 flex items-center gap-2 text-amber-800">
-              <FileText className="w-4 h-4" />
-              Pending review ({team.deliverables.filter(d => d.status === 'SUBMITTED').length})
-            </h3>
-            <div className="space-y-2">
-              {team.deliverables.filter(d => d.status === 'SUBMITTED').map(d => (
-                <div key={d.id} className="flex items-center justify-between p-3 bg-white rounded-lg border"
-                     style={{ borderColor: 'var(--border)' }}>
-                  <div>
-                    <p className="text-sm font-medium">{d.title}</p>
-                    <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                      Submitted {formatDate(d.submittedAt)}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {d.fileUrl && (
-                      <a href={d.fileUrl} target="_blank" rel="noopener noreferrer" className="btn-ghost text-xs">
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
-                    )}
-                    <button className="tag-green tag cursor-pointer hover:opacity-80 text-xs">Approve</button>
-                    <button className="tag-red tag cursor-pointer hover:opacity-80 text-xs">Request revision</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Milestones timeline */}
-        <div className="card">
-          <h3 className="mb-4 flex items-center gap-2"><CheckSquare className="w-4 h-4" /> Milestones</h3>
-          <table className="data-table">
-            <thead><tr><th>Milestone</th><th>Phase</th><th>Due date</th><th>Status</th></tr></thead>
-            <tbody>
-              {team.milestones.map(m => (
-                <tr key={m.id}>
-                  <td className="font-medium">{m.title}</td>
-                  <td><span className={`phase-badge ${phaseColor(m.phase)} text-xs`}>{m.phase}</span></td>
-                  <td className="text-sm" style={{ color: 'var(--text-secondary)' }}>{formatDate(m.dueDate)}</td>
-                  <td><span className={`tag text-xs ${statusColor(m.status)}`}>{m.status.replace('_', ' ')}</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* AI tool usage */}
-        {team.aiLogs.length > 0 && (
-          <div className="card">
-            <h3 className="mb-4 flex items-center gap-2"><Bot className="w-4 h-4" /> AI tools used</h3>
-            <div className="flex flex-wrap gap-2 mb-4">
-              {Object.entries(toolCounts).sort(([,a],[,b]) => b-a).map(([tool, count]) => (
-                <span key={tool} className="tag-teal tag">{tool} <span className="opacity-60 ml-1">{count}×</span></span>
-              ))}
-            </div>
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {team.aiLogs.slice(0, 10).map(l => (
-                <div key={l.id} className="flex items-start gap-3 text-sm p-2 rounded-lg"
-                     style={{ background: 'var(--surface-raised)' }}>
-                  <span className="tag-teal tag text-xs shrink-0">{l.toolUsed}</span>
-                  <span className="flex-1">{l.activity}</span>
-                  <span className="text-xs shrink-0" style={{ color: 'var(--text-muted)' }}>{formatDate(l.loggedAt)}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Reflections */}
-        {team.reflections.length > 0 && (
-          <div className="card">
-            <h3 className="mb-4 flex items-center gap-2"><TrendingUp className="w-4 h-4" /> Reflections</h3>
-            <div className="space-y-3">
-              {team.reflections.map(r => (
-                <div key={r.id} className="p-3 rounded-lg border" style={{ borderColor: 'var(--border)' }}>
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-semibold">{r.month}</p>
-                    <button className="tag-purple tag text-xs flex items-center gap-1 cursor-pointer hover:opacity-80">
-                      <MessageSquare className="w-3 h-3" /> Add comment
-                    </button>
-                  </div>
-                  {r.whatAchieved && <p className="text-sm">{r.whatAchieved}</p>}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Mentor sessions */}
-        {team.mentorSessions.length > 0 && (
-          <div className="card">
-            <h3 className="mb-4 flex items-center gap-2"><Calendar className="w-4 h-4" /> Mentor sessions</h3>
-            <div className="space-y-3">
-              {team.mentorSessions.map(s => (
-                <div key={s.id} className="p-3 rounded-lg" style={{ background: 'var(--surface-raised)' }}>
-                  <div className="flex items-center gap-2 mb-1">
-                    <Calendar className="w-3.5 h-3.5" style={{ color: 'var(--text-muted)' }} />
-                    <span className="text-sm font-medium">{formatDate(s.meetingDate)}</span>
-                  </div>
-                  {s.summary && <p className="text-sm">{s.summary}</p>}
-                  {s.actionItems && (
-                    <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                      Action items: {s.actionItems}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Evaluation panel */}
         {facultyProfile && (
           <EvaluationPanel
             team={{ id: team.id, currentPhase: team.currentPhase, evaluations: team.evaluations }}

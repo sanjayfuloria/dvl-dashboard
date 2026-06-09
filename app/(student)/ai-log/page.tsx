@@ -1,4 +1,4 @@
-import { auth } from '@/auth'
+import { getSession } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { formatDate } from '@/lib/utils'
@@ -34,10 +34,10 @@ async function getTeamAndLogs(userId: string) {
 }
 
 export default async function AILogPage() {
-  const session = await auth()
-  if (!session?.user?.id) return null
+  const session = await getSession()
+  if (!session?.id) return null
 
-  const team = await getTeamAndLogs(session.user.id)
+  const team = await getTeamAndLogs(session.id)
 
   // Tool usage summary
   const toolCounts: Record<string, number> = {}

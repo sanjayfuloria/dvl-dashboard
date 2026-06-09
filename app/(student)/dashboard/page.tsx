@@ -1,4 +1,4 @@
-import { auth } from '@/auth'
+import { getSession } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { phaseLabel, phaseColor, healthLabel, healthColor, formatDate, formatDateShort } from '@/lib/utils'
@@ -36,10 +36,10 @@ async function getStudentData(userId: string) {
 }
 
 export default async function StudentDashboard() {
-  const session = await auth()
-  if (!session?.user?.id) return null
+  const session = await getSession()
+  if (!session?.id) return null
 
-  const student = await getStudentData(session.user.id)
+  const student = await getStudentData(session.id)
   const team = student?.teamMembers?.[0]?.team
 
   const upcomingMilestones = team?.milestones.filter(
@@ -52,7 +52,7 @@ export default async function StudentDashboard() {
   return (
     <div className="page-enter">
       <PageHeader
-        title={`Welcome back, ${session.user.name?.split(' ')[0] ?? 'Student'}`}
+        title={`Welcome back, ${session.name?.split(' ')[0] ?? 'Student'}`}
         subtitle="Here's what's happening with your venture"
       />
 

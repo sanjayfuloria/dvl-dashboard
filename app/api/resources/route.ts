@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@/auth'
+import { getSession } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
@@ -17,8 +17,8 @@ const schema = z.object({
 })
 
 export async function POST(req: NextRequest) {
-  const session = await auth()
-  if (session?.user?.role !== 'ADMIN' && session?.user?.role !== 'FACULTY') {
+  const session = await getSession()
+  if (session?.role !== 'ADMIN' && session?.role !== 'FACULTY') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
   const body = await req.json()
@@ -26,14 +26,14 @@ export async function POST(req: NextRequest) {
   if (!data.success) return NextResponse.json({ error: 'Invalid' }, { status: 400 })
 
   const resource = await prisma.resource.create({
-    data: { ...data.data, createdById: session.user.id },
+    data: { ...data.data, createdById: session.id },
   })
   return NextResponse.json(resource, { status: 201 })
 }
 
 export async function GET() {
-  const session = await auth()
-  if (!session?.user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const resources = await prisma.resource.findMany({ orderBy: { createdAt: 'desc' } })
   return NextResponse.json(resources)

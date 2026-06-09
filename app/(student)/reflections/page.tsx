@@ -1,4 +1,4 @@
-import { auth } from '@/auth'
+import { getSession } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { formatDate } from '@/lib/utils'
@@ -37,9 +37,9 @@ async function getTeamReflections(userId: string) {
 }
 
 export default async function ReflectionsPage() {
-  const session = await auth()
-  if (!session?.user?.id) return null
-  const team = await getTeamReflections(session.user.id)
+  const session = await getSession()
+  if (!session?.id) return null
+  const team = await getTeamReflections(session.id)
 
   return (
     <div className="page-enter">

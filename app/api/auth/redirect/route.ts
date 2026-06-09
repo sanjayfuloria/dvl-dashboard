@@ -1,12 +1,16 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@/auth'
-import { roleRedirect } from '@/lib/utils'
+import { getSession } from '@/lib/session'
 
 export async function GET() {
-  const session = await auth()
-  if (!session?.user?.role) {
-    return NextResponse.redirect(new URL('/login', process.env.NEXTAUTH_URL!))
+  const user = await getSession()
+  if (!user) {
+    return NextResponse.redirect('https://www.sanjayfuloria.tech/dvl/login')
   }
-  const destination = roleRedirect(session.user.role)
-  return NextResponse.redirect(new URL(destination, process.env.NEXTAUTH_URL!))
+  const redirects: Record<string, string> = {
+    ADMIN: 'https://www.sanjayfuloria.tech/dvl/admin/dashboard',
+    FACULTY: 'https://www.sanjayfuloria.tech/dvl/faculty/dashboard',
+    MENTOR: 'https://www.sanjayfuloria.tech/dvl/mentor/dashboard',
+    STUDENT: 'https://www.sanjayfuloria.tech/dvl/dashboard',
+  }
+  return NextResponse.redirect(redirects[user.role] ?? 'https://www.sanjayfuloria.tech/dvl/dashboard')
 }

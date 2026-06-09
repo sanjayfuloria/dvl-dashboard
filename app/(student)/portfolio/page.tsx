@@ -1,4 +1,4 @@
-import { auth } from '@/auth'
+import { getSession } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { formatDate, phaseLabel } from '@/lib/utils'
@@ -33,9 +33,9 @@ async function getPortfolioData(userId: string) {
 }
 
 export default async function PortfolioPage() {
-  const session = await auth()
-  if (!session?.user?.id) return null
-  const student = await getPortfolioData(session.user.id)
+  const session = await getSession()
+  if (!session?.id) return null
+  const student = await getPortfolioData(session.id)
   const teams = student?.teamMembers.map((m) => m.team) ?? []
 
   const totalAILogs = teams.reduce((a, t) => a + t.aiLogs.length, 0)
@@ -64,11 +64,11 @@ export default async function PortfolioPage() {
         <div className="card flex items-start gap-5">
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-bold text-white shrink-0"
                style={{ background: 'var(--dvl-purple)' }}>
-            {session.user.name?.charAt(0) ?? '?'}
+            {session.name?.charAt(0) ?? '?'}
           </div>
           <div className="flex-1">
-            <h2 className="text-xl font-semibold">{session.user.name}</h2>
-            <p className="text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>{session.user.email}</p>
+            <h2 className="text-xl font-semibold">{session.name}</h2>
+            <p className="text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>{session.email}</p>
             {student?.programme && (
               <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
                 {student.programme} · Batch {student.batch} · Roll {student.rollNumber}

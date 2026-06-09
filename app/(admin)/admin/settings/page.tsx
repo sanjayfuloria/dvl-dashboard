@@ -1,12 +1,12 @@
-import { auth } from '@/auth'
+import { getSession } from '@/lib/session'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Settings, Mail, Database, Shield, Globe } from 'lucide-react'
 
 export const metadata = { title: 'Settings' }
 
 export default async function SettingsPage() {
-  const session = await auth()
-  if (!session?.user) return null
+  const session = await getSession()
+  if (!session) return null
 
   const sections = [
     {

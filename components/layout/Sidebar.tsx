@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { signOut } from 'next-auth/react'
+
 import { cn } from '@/lib/utils'
 import {
   Zap, LayoutDashboard, Rocket, CheckSquare, Bot, BookOpen,
@@ -190,7 +190,7 @@ export function Sidebar({ role, userName, userEmail }: SidebarProps) {
             <p className="text-[10px] truncate" style={{ color: 'rgba(255,255,255,0.35)' }}>{userEmail}</p>
           </div>
           <button
-            onClick={() => signOut({ callbackUrl: '/login' })}
+            onClick={() => fetch('/dvl/api/logout', { method: 'POST' }).then(() => window.location.href = 'https://www.sanjayfuloria.tech/dvl/login')}
             title="Sign out"
             className="p-1.5 rounded-md transition-colors"
             style={{ color: 'rgba(255,255,255,0.35)' }}
