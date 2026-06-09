@@ -1,7 +1,37 @@
 # DVL Dashboard
 ### Digital Venture Lab — ICFAI Foundation for Higher Education (IFHE), Hyderabad
 
-The operating system for the Digital Venture Lab. Manage the complete lifecycle of AI-enabled digital product development — from idea to MVP — for students, faculty, mentors, and administrators.
+Complete operating system for the Digital Venture Lab at IFHE. Manages the full student venture lifecycle from idea validation through prototype to MVP.
+
+**Live URL:** https://www.sanjayfuloria.tech/dvl  
+**Repository:** https://github.com/sanjayfuloria/dvl-dashboard
+
+---
+
+## Test Accounts
+
+| Role | Email | Password |
+|---|---|---|
+| Admin | sanjay.fuloria@ibsindia.org | Admin@DVL2025 |
+| Admin | admin@dvl.ifhe.edu.in | Admin@DVL2025 |
+| Faculty | faculty@ifhe.edu.in | Faculty@DVL2025 |
+| Mentor | mentor@example.com | Mentor@DVL2025 |
+| Student | student@ifhe.edu.in | Student@DVL2025 |
+
+Login URL: https://www.sanjayfuloria.tech/dvl/login
+
+After first login, change your password via Sidebar > Change Password.
+
+---
+
+## Demo Data Pre-loaded
+
+- Team: Team Alpha | Venture: AgriConnect
+- Course: MPB (Managing Platform Businesses) | Sector: AgriTech
+- Phase: Prototype | Progress: 45%
+- Faculty Guide: Dr. Sample Faculty
+- Industry Mentor: Rajesh Kumar (TechVentures India)
+- Student: Priya Sharma (student@ifhe.edu.in)
 
 ---
 
@@ -9,313 +39,232 @@ The operating system for the Digital Venture Lab. Manage the complete lifecycle 
 
 | Layer | Technology |
 |---|---|
-| Framework | Next.js 14 (App Router, TypeScript) |
-| Database | PostgreSQL + Prisma ORM |
-| Authentication | NextAuth v5 + Resend magic links |
+| Framework | Next.js 15.3.3 (App Router, TypeScript) |
+| Database | PostgreSQL 14 + Prisma ORM 5.x |
+| Authentication | Custom JWT (jose) — email + password, HttpOnly cookie |
 | Styling | Tailwind CSS + custom design tokens |
-| Email | Resend |
-| File storage | Google Drive API (service account) |
+| Email | Resend (noreply@sanjayfuloria.tech) |
+| File Storage | Google Drive API (service account) |
 | Deployment | Hostinger VPS + Nginx + PM2 |
-| CI/CD | GitHub Actions |
+| CI/CD | GitHub Actions (auto-deploy on push to main) |
 
 ---
 
-## Features
+## Features by Role
 
-### 4 Role Portals
-- **Student** — venture profile, milestones, AI build log, reflections, portfolio
-- **Faculty** — team monitoring, evaluations, feedback, analytics
-- **Mentor** — assigned teams, session records, recommendations
-- **Admin** — full user management, programme analytics, milestone config, reports
+### Student Portal
+- Home dashboard — venture summary, milestones, AI activity, quick actions
+- Project Profile — venture details, team members, faculty guide, mentor
+- Milestones — phase-by-phase tracker with deliverable file uploads to Google Drive
+- AI Build Log — document every AI tool used (tool, purpose, prompt, output, time saved)
+- Monthly Reflections — structured 7-question learning journal
+- Knowledge Hub — resources, templates, frameworks, prompt libraries
+- Portfolio — placement-ready profile of the DVL journey
+- Change Password
 
-### Core Modules
-1. Dashboard home (role-specific views)
-2. Team & venture management
-3. DVL journey (Ideation → Prototype → MVP)
-4. AI Build Log (responsible AI documentation)
-5. Mentor management & session records
-6. Evaluation module (3-phase scorecards)
-7. Progress reflection module
-8. Knowledge repository
-9. Analytics dashboard
-10. Demo Day showcase
-11. Placement portfolio
-12. Administrative reports
+### Faculty Portal
+- Dashboard — all assigned teams, pending reviews, at-risk flags
+- Teams — detail view with milestones, deliverables, AI logs, reflections
+- Evaluation Panel — score teams on phase rubric (1-10 per criterion)
 
----
+### Mentor Portal
+- Dashboard — assigned teams summary and status
+- Teams — project status, reflections, milestones
+- Sessions — log mentor meetings with notes
 
-## Local Development Setup
-
-### Prerequisites
-- Node.js 20+
-- PostgreSQL 14+
-- A [Resend](https://resend.com) account (free tier works)
-
-### 1. Clone and install
-
-```bash
-git clone https://github.com/YOUR_ORG/dvl-dashboard.git
-cd dvl-dashboard
-npm install
-```
-
-### 2. Configure environment
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env` and fill in:
-
-```env
-DATABASE_URL="postgresql://dvl_user:password@localhost:5432/dvl_dashboard"
-AUTH_SECRET="run: openssl rand -base64 32"
-NEXTAUTH_URL="http://localhost:3000"
-RESEND_API_KEY="re_xxxxxxxxxxxxxxxx"
-EMAIL_FROM="DVL Dashboard <noreply@yourdomain.com>"
-```
-
-### 3. Set up the database
-
-```bash
-# Create the database
-createdb dvl_dashboard
-
-# Run migrations
-npx prisma migrate dev --name init
-
-# Generate Prisma client
-npx prisma generate
-
-# Seed with demo data
-npm run db:seed
-```
-
-### 4. Start development server
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000).
-
-**Demo login emails** (use magic link):
-- `admin@dvl.ifhe.edu.in` — Admin
-- `faculty@ifhe.edu.in` — Faculty
-- `mentor@example.com` — Mentor  
-- `student@ifhe.edu.in` — Student
-
-> In development, the magic link URL is printed to the **terminal** (no actual email sent unless Resend is configured).
+### Admin Panel
+- Dashboard — programme health: users, teams, phases, AI adoption
+- Users — add users, set passwords, change roles, bulk import via CSV
+- Teams — create teams, assign faculty/mentor/students; auto-creates Google Drive folder
+- Milestones — all milestones across all teams
+- Resources — knowledge repository management
+- Analytics — charts: phase distribution, AI tool usage, evaluation scores
+- Demo Day — showcase all MVP-stage ventures
+- Settings — system configuration and integration status
 
 ---
 
-## Production Deployment on Hostinger VPS
+## Key Integrations
 
-### Step 1 — Provision VPS
+### Google Drive
+- Team folder + 5 subfolders auto-created when team is created
+- Subfolders: Deliverables / Meeting Notes / Prototypes / Research / Presentations
+- Students upload files from Milestones page directly to the right subfolder
+- Root folder: https://drive.google.com/drive/folders/1M-iKZO60pA4GfwNyLULPy6W7Ad-B_LYm
+- Service account: dvl-service@dvl-dashboard.iam.gserviceaccount.com
 
-Recommended: Ubuntu 22.04 LTS, minimum 2 vCPU / 2GB RAM.
+### Resend Email
+- Welcome email on user creation (includes login URL + password)
+- Role change notification with special admin promotion message
+- Verified sending domain: sanjayfuloria.tech
 
-### Step 2 — Run server setup script
+### Bulk User Import
+- Upload CSV with columns: name, email, role, password
+- Password auto-generated if blank
+- Welcome emails sent to all imported users if checkbox selected
 
-```bash
-# SSH into your VPS
-ssh root@YOUR_VPS_IP
+CSV format example:
+  name,email,role,password
+  Priya Sharma,priya@ifhe.edu.in,STUDENT,
+  Dr. Anita Verma,anita@ifhe.edu.in,FACULTY,
+  Rajesh Mehta,rajesh@company.com,MENTOR,MyPass123
 
-# Download and run the setup script
-curl -O https://raw.githubusercontent.com/YOUR_ORG/dvl-dashboard/main/deploy/setup-vps.sh
-bash setup-vps.sh
-```
+---
 
-This installs Node.js 20, PostgreSQL, Nginx, PM2, and configures the firewall.
+## Database Models (18 total)
 
-### Step 3 — Clone the repo
+User, UserPassword, StudentProfile, FacultyProfile, MentorProfile,
+Team, TeamMember, Milestone, Deliverable, Evaluation, AIBuildLog,
+Reflection, ReflectionComment, MentorSession, Resource,
+DemoShowcase, WorkspaceFile, Notification
 
-```bash
-cd /var/www
-git clone https://github.com/YOUR_ORG/dvl-dashboard.git
-cd dvl-dashboard
-```
+---
 
-### Step 4 — Configure environment
+## Authentication
 
-```bash
-cp .env.example .env
-nano .env
-# Fill in all values (especially AUTH_SECRET, NEXTAUTH_URL with your real domain)
-```
+- Session: JWT in dvl_session cookie (30-day, HttpOnly, Secure, SameSite=Lax)
+- Passwords: bcrypt 12 rounds
+- Route protection: Next.js Edge middleware (jose JWT verify)
+- Role redirects after login:
+  - ADMIN  -> /dvl/admin/dashboard
+  - FACULTY -> /dvl/faculty/dashboard
+  - MENTOR  -> /dvl/mentor/dashboard
+  - STUDENT -> /dvl/dashboard
 
-### Step 5 — Install, migrate, build
+---
 
-```bash
-npm ci
-npx prisma generate
-npx prisma migrate deploy
-npm run db:seed
-npm run build
+## Local Development
 
-# Copy static files for standalone output
-cp -r public .next/standalone/public
-cp -r .next/static .next/standalone/.next/static
-```
+Requirements: Node.js 20+, PostgreSQL 14+
 
-### Step 6 — Start with PM2
+  git clone https://github.com/sanjayfuloria/dvl-dashboard.git
+  cd dvl-dashboard
+  npm install
+  cp .env.example .env   # fill in values
+  npx prisma migrate dev --name init
+  npx prisma generate
+  npm run db:seed
+  npm run dev
+  # Opens at http://localhost:3000/dvl/login
 
-```bash
-pm2 start ecosystem.config.js --env production
-pm2 save
-pm2 startup   # follow the instruction it prints
-```
+Environment variables needed in .env:
+  DATABASE_URL
+  AUTH_SECRET          (openssl rand -hex 32)
+  NEXTAUTH_URL         (http://localhost:3000/dvl for dev)
+  AUTH_TRUST_HOST      (true)
+  RESEND_API_KEY
+  EMAIL_FROM
+  GOOGLE_SERVICE_ACCOUNT_EMAIL
+  GOOGLE_SERVICE_ACCOUNT_KEY
+  GOOGLE_DRIVE_ROOT_FOLDER_ID
+  NODE_ENV
 
-### Step 7 — Configure Nginx
+---
 
-```bash
-# Update the domain name in the nginx config
-nano /etc/nginx/sites-available/dvl-dashboard
-# Replace YOUR_DOMAIN.edu.in with your real domain
+## Production Server
 
-nginx -t && systemctl reload nginx
-```
-
-### Step 8 — SSL certificate (Let's Encrypt)
-
-```bash
-certbot --nginx -d dvl.ifhe.edu.in
-```
-
-### Step 9 — Set up GitHub Actions for auto-deploy
-
-Add these secrets in GitHub → Settings → Secrets → Actions:
-
-| Secret | Value |
+| Item | Value |
 |---|---|
-| `VPS_HOST` | Your VPS IP address |
-| `VPS_USER` | SSH username (e.g. `ubuntu`) |
-| `VPS_SSH_KEY` | Private SSH key (contents of `~/.ssh/id_rsa`) |
-| `VPS_PORT` | SSH port (default: `22`) |
-| `DATABASE_URL` | Full PostgreSQL connection string |
-| `AUTH_SECRET` | Your AUTH_SECRET value |
-| `NEXTAUTH_URL` | `https://dvl.ifhe.edu.in` |
-| `RESEND_API_KEY` | Your Resend API key |
-| `EMAIL_FROM` | From email address |
+| Provider | Hostinger VPS |
+| IP | 187.127.167.139 |
+| OS | Ubuntu 22.04 LTS |
+| Node.js | 20.x |
+| App path | /var/www/dvl-dashboard |
+| App port | 3001 (proxied by Nginx at /dvl) |
+| PM2 app | dvl-dashboard (id: 4) |
+| Nginx config | /etc/nginx/sites-available/sanjayfuloria.tech |
+| PM2 logs | /root/.pm2/logs/dvl-dashboard-*.log |
 
-After this, every push to `main` automatically deploys.
+### Manual deploy commands
 
----
+  ssh root@187.127.167.139
+  cd /var/www/dvl-dashboard
+  git pull origin main
+  npm install
+  npx prisma migrate deploy
+  npx prisma generate
+  npm run build
+  pm2 restart dvl-dashboard --update-env
 
-## Google Drive Integration
+### Useful PM2 commands
 
-### Setup
-1. Go to [Google Cloud Console](https://console.cloud.google.com)
-2. Create a project → Enable **Google Drive API**
-3. Create a **Service Account** → Download JSON key
-4. Install the auth library: `npm install google-auth-library`
-5. Share your root Google Drive folder with the service account email
-6. Add to `.env`:
-   ```env
-   GOOGLE_SERVICE_ACCOUNT_EMAIL="dvl@your-project.iam.gserviceaccount.com"
-   GOOGLE_SERVICE_ACCOUNT_KEY="-----BEGIN RSA PRIVATE KEY-----\n..."
-   GOOGLE_DRIVE_ROOT_FOLDER_ID="1abc123..."
-   ```
-7. Update `lib/google-drive.ts` — replace the `getAccessToken()` stub with:
-   ```ts
-   import { GoogleAuth } from 'google-auth-library'
-   async function getAccessToken() {
-     const auth = new GoogleAuth({
-       credentials: {
-         client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-         private_key: process.env.GOOGLE_SERVICE_ACCOUNT_KEY?.replace(/\\n/g, '\n'),
-       },
-       scopes: ['https://www.googleapis.com/auth/drive'],
-     })
-     const client = await auth.getClient()
-     const token = await client.getAccessToken()
-     return token.token!
-   }
-   ```
+  pm2 status
+  pm2 logs dvl-dashboard --lines 50
+  pm2 restart dvl-dashboard --update-env
+  pm2 stop dvl-dashboard
 
-When a new team is created, a Google Drive folder is automatically created under your root folder.
+### Useful database commands
+
+  npx prisma studio          # Visual DB browser (dev)
+  npx prisma migrate deploy  # Deploy migrations (production)
+  npm run db:seed            # Re-seed demo data
 
 ---
 
-## Google Forms Integration
+## Google Drive Setup Reference
 
-For evaluation forms and student intake:
-
-1. Create a Google Form (evaluation scorecard, student onboarding, etc.)
-2. In the Form → Responses → Link to Sheets
-3. Add a Google Apps Script trigger to POST responses to your API:
-   ```js
-   function onFormSubmit(e) {
-     const payload = {
-       teamId: e.values[1],
-       phase: e.values[2],
-       // ... map form fields
-     }
-     UrlFetchApp.fetch('https://dvl.ifhe.edu.in/api/evaluations', {
-       method: 'POST',
-       contentType: 'application/json',
-       payload: JSON.stringify(payload),
-       headers: { 'x-api-key': 'YOUR_API_KEY' }
-     })
-   }
-   ```
-
----
-
-## Database Management
-
-```bash
-# View database in browser
-npm run db:studio
-
-# Create a new migration after schema changes
-npx prisma migrate dev --name describe_your_change
-
-# Reset database (development only)
-npx prisma migrate reset
-
-# Deploy migrations to production
-npx prisma migrate deploy
-```
+1. Google Cloud project: DVL Dashboard
+2. APIs enabled: Google Drive API, Google Sheets API
+3. Service account JSON: /var/www/dvl-dashboard/dvl-dashboard-2ab45998367c.json (NOT in git)
+4. Root folder ID: 1M-iKZO60pA4GfwNyLULPy6W7Ad-B_LYm
+5. Root folder shared with service account as Editor
 
 ---
 
 ## Project Structure
 
-```
-dvl-dashboard/
-├── app/
-│   ├── (auth)/              # Login, verify pages
-│   ├── (student)/           # Student portal pages
-│   ├── (faculty)/           # Faculty portal pages
-│   ├── (admin)/             # Admin panel pages
-│   └── api/                 # API routes
-├── components/
-│   ├── layout/              # Sidebar, PageHeader
-│   ├── student/             # Student-specific components
-│   ├── faculty/             # Faculty-specific components
-│   └── admin/               # Admin-specific components
-├── lib/
-│   ├── prisma.ts            # Database client
-│   ├── utils.ts             # Shared utilities
-│   └── google-drive.ts      # Google Drive integration
-├── prisma/
-│   ├── schema.prisma        # Database schema
-│   └── seed.ts              # Demo data
-├── types/
-│   └── next-auth.d.ts       # Type augmentations
-├── deploy/
-│   ├── nginx.conf           # Production Nginx config
-│   └── setup-vps.sh         # One-shot VPS bootstrap
-├── .github/workflows/
-│   └── deploy.yml           # GitHub Actions CI/CD
-├── auth.ts                  # NextAuth configuration
-├── middleware.ts            # Route protection + RBAC
-└── ecosystem.config.js      # PM2 process config
-```
+  app/
+    (auth)/login/              Login page
+    (auth)/change-password/    Change password
+    (student)/dashboard/       Student home
+    (student)/milestones/      Milestones + file uploads
+    (student)/ai-log/          AI Build Log
+    (student)/reflections/     Monthly reflections
+    (student)/resources/       Knowledge Hub
+    (student)/portfolio/       Placement portfolio
+    (faculty)/faculty/         Faculty portal pages
+    (admin)/admin/             Admin portal pages
+    mentor/                    Mentor portal pages
+    api/login/                 JWT login endpoint
+    api/logout/                Session logout
+    api/upload/                File upload to Drive
+    api/teams/                 Team CRUD
+    api/admin/users/           User management endpoints
+  components/
+    layout/Sidebar.tsx         Role-aware navigation
+    admin/                     Admin UI components
+    student/                   Student UI components
+    shared/FileUpload.tsx      Drag-drop Drive upload
+  lib/
+    session.ts                 JWT session management
+    google-drive.ts            Google Drive API
+    prisma.ts                  Prisma client
+  prisma/
+    schema.prisma              18-model database schema
+    seed.ts                    Demo data seeder
+  middleware.ts                Route protection
 
 ---
 
-## Support
+## Planned Enhancements
 
-Built for the Digital Ventures Lab, CDOE, IFHE Hyderabad.
+1. AI Venture Co-pilot (Claude API) — customer discovery, BMC filling, market sizing
+2. In-platform messaging — direct messages between students, faculty, mentors
+3. Automated milestone reminders — email 7 days and 1 day before deadlines
+4. Public showcase page — public URL per team for Demo Day and placement
+5. LinkedIn export — one-click DVL portfolio as PDF or LinkedIn post
+6. Jury portal — temporary Demo Day judge logins with auto-tallied scores
+7. Cohort management — multiple batches (2024-26, 2025-27) with separate timelines
+8. Announcement board — programme-wide notices from admin/faculty
+
+---
+
+## Project Owner
+
+Digital Ventures Lab
+Center for Distance and Online Education (CDOE)
+ICFAI Foundation for Higher Education (IFHE), Hyderabad
+
+Director, CDOE: Prof. Sanjay Fuloria
+Platform: https://www.sanjayfuloria.tech/dvl
+Repository: https://github.com/sanjayfuloria/dvl-dashboard
