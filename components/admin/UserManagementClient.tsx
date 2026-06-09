@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { formatDate } from '@/lib/utils'
 import { Search, Plus, Loader2, X, Eye, EyeOff, RefreshCw, Copy, Check } from 'lucide-react'
@@ -209,20 +210,12 @@ export function UserManagementClient({ users }: Props) {
       </div>
 
       {/* Add user modal */}
-      {open && (
-        <div>
-          <div onClick={() => { if (!success) setOpen(false) }}
-            style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(0,0,0,0.5)' }} />
-          <div style={{
-            position: 'fixed', inset: 0, zIndex: 51,
-            overflowY: 'auto', padding: '32px 16px',
-            display: 'flex', justifyContent: 'center', alignItems: 'flex-start',
-          }}>
-            <div style={{
-              width: '100%', maxWidth: 480,
-              background: 'white', borderRadius: 16,
-              boxShadow: '0 24px 80px rgba(0,0,0,0.3)',
-            }}>
+      {open && typeof window !== 'undefined' && createPortal(
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)', overflowY: 'auto', padding: '32px 16px 64px' }}
+          onClick={(e) => { if (e.target === e.currentTarget && !success) setOpen(false) }}
+        >
+          <div style={{ width: '100%', maxWidth: 480, margin: '0 auto', background: 'white', borderRadius: 16, boxShadow: '0 24px 80px rgba(0,0,0,0.3)' }}>
               <div style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 padding: '20px 24px', borderBottom: '1px solid var(--border)',
@@ -349,8 +342,8 @@ export function UserManagementClient({ users }: Props) {
                 </form>
               )}
             </div>
-          </div>
-        </div>
+          </div>,
+        document.body
       )}
     </div>
   )

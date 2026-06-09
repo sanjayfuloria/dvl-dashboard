@@ -268,10 +268,8 @@ export default async function StudentDashboard() {
                       { href: '/portfolio', label: 'View portfolio', icon: Star },
                     ].map((action) => (
                       <Link key={action.href} href={action.href}
-                            className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm transition-colors"
-                            style={{ color: 'var(--text-secondary)' }}
-                            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-raised)'}
-                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                            className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm transition-colors hover:bg-gray-50"
+                            style={{ color: 'var(--text-secondary)' }}>
                         <action.icon className="w-4 h-4" />
                         {action.label}
                         <ChevronRight className="w-3 h-3 ml-auto" />

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { Upload, X, Download, Loader2, CheckCircle, AlertCircle, SkipForward } from 'lucide-react'
 
@@ -58,20 +59,12 @@ Rajesh Mehta,rajesh@company.com,MENTOR,`
         <Upload className="w-4 h-4" /> Bulk import
       </button>
 
-      {open && (
-        <>
-          <div onClick={() => { if (!loading) { setOpen(false); reset() } }}
-            style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(0,0,0,0.5)' }} />
-          <div style={{
-            position: 'fixed', inset: 0, zIndex: 51,
-            overflowY: 'auto', padding: '32px 16px',
-            display: 'flex', justifyContent: 'center', alignItems: 'flex-start',
-          }}>
-            <div style={{
-              width: '100%', maxWidth: 560,
-              background: 'white', borderRadius: 16,
-              boxShadow: '0 24px 80px rgba(0,0,0,0.3)',
-            }}>
+      {open && typeof window !== 'undefined' && createPortal(
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.5)', overflowY: 'auto', padding: '32px 16px 64px' }}
+          onClick={(e) => { if (e.target === e.currentTarget && !loading) { setOpen(false); reset() } }}
+        >
+          <div style={{ width: '100%', maxWidth: 560, margin: '0 auto', background: 'white', borderRadius: 16, boxShadow: '0 24px 80px rgba(0,0,0,0.3)' }}>
               {/* Header */}
               <div style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -263,9 +256,9 @@ Rajesh Mehta,rajesh@company.com,MENTOR,`
                 )}
               </div>
             </div>
-          </div>
-        </>
-      )}
+          </div>,
+          document.body
+        )}
     </>
   )
 }
