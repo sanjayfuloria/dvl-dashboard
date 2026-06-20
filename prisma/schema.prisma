@@ -170,6 +170,8 @@ model Team {
   mentorSessions  MentorSession[]
   demoDay         DemoShowcase?
   workspaceFiles  WorkspaceFile[]
+  demoDaySlots    DemoDaySlot[]
+  shortlist       DemoDayShortlist?
 }
 
 model TeamMember {
@@ -428,3 +430,12 @@ model UserPassword {
   user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   hash     String
 }
+
+enum DemoDayRound   { ROUND_1 FINAL }
+enum DemoDayStatus  { DRAFT SCHEDULED IN_PROGRESS COMPLETED }
+enum ShortlistStatus { PENDING SHORTLISTED NOT_SHORTLISTED FINALIST }
+model DemoDay { id String @id @default(cuid()) title String date DateTime venue String? status DemoDayStatus @default(DRAFT) createdAt DateTime @default(now()) updatedAt DateTime @updatedAt slots DemoDaySlot[] jury DemoDayJury[] }
+model DemoDaySlot { id String @id @default(cuid()) demoDayId String demoDay DemoDay @relation(fields:[demoDayId],references:[id],onDelete:Cascade) teamId String team Team @relation(fields:[teamId],references:[id]) round DemoDayRound slotTime String? room String? order Int @default(0) token String @unique @default(cuid()) createdAt DateTime @default(now()) scores DemoDayScore[] @@unique([demoDayId,teamId,round]) }
+model DemoDayJury { id String @id @default(cuid()) demoDayId String demoDay DemoDay @relation(fields:[demoDayId],references:[id],onDelete:Cascade) name String email String organisation String? designation String? round DemoDayRound token String @unique @default(cuid()) createdAt DateTime @default(now()) scores DemoDayScore[] }
+model DemoDayScore { id String @id @default(cuid()) slotId String slot DemoDaySlot @relation(fields:[slotId],references:[id],onDelete:Cascade) juryId String jury DemoDayJury @relation(fields:[juryId],references:[id],onDelete:Cascade) problemSignificance Int? productQuality Int? aiUtilisation Int? businessPotential Int? totalScore Float? feedback String? submittedAt DateTime @default(now()) @@unique([slotId,juryId]) }
+model DemoDayShortlist { id String @id @default(cuid()) teamId String @unique team Team @relation(fields:[teamId],references:[id],onDelete:Cascade) status ShortlistStatus @default(PENDING) notes String? rank Int? updatedAt DateTime @updatedAt @default(now()) }
