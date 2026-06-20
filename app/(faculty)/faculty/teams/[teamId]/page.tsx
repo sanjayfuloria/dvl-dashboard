@@ -6,6 +6,7 @@ import { phaseLabel, phaseColor, healthLabel, healthColor, statusColor, formatDa
 import { Users, CheckSquare, Bot, TrendingUp, Calendar, ChevronLeft, FolderOpen, FileText, ExternalLink, MessageSquare } from 'lucide-react'
 import Link from 'next/link'
 import { EvaluationPanel } from '@/components/faculty/EvaluationPanel'
+import { DeliverableReview } from '@/components/faculty/DeliverableReview'
 
 async function getTeamDetail(teamId: string) {
   return prisma.team.findUnique({
@@ -13,7 +14,7 @@ async function getTeamDetail(teamId: string) {
     include: {
       members: { include: { student: { include: { user: true } } } },
       milestones: { orderBy: [{ phase: 'asc' }, { createdAt: 'asc' }] },
-      deliverables: { orderBy: { createdAt: 'desc' } },
+      deliverables: { orderBy: { createdAt: 'desc' }, include: { milestone: { select: { id: true, title: true, phase: true } } } },
       evaluations: { orderBy: { createdAt: 'desc' } },
       aiLogs: { orderBy: { loggedAt: 'desc' } },
       reflections: { orderBy: { submittedAt: 'desc' }, include: { comments: { include: { faculty: { include: { user: true } } } } } },
@@ -110,6 +111,21 @@ export default async function TeamDetailPage({ params }: { params: Promise<{ tea
             facultyId={facultyProfile.id}
           />
         )}
+
+        <DeliverableReview
+          teamId={team.id}
+          deliverables={team.deliverables.map((d: any) => ({
+            id: d.id,
+            title: d.title,
+            type: d.type,
+            status: d.status,
+            fileUrl: d.fileUrl,
+            driveFileId: d.driveFileId,
+            submittedAt: d.submittedAt?.toISOString() ?? null,
+            feedback: d.feedback,
+            milestone: d.milestone ?? null,
+          }))}
+        />
       </div>
     </div>
   )

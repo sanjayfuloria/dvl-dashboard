@@ -74,8 +74,9 @@ export async function POST(req: NextRequest) {
     },
   })
 
-  // If linked to a milestone deliverable, update it
+  // Always create/update a Deliverable record for faculty review
   if (milestoneId) {
+    // Linked to a specific milestone
     await prisma.deliverable.upsert({
       where: { id: milestoneId },
       update: {
@@ -83,6 +84,7 @@ export async function POST(req: NextRequest) {
         fileUrl: driveFileUrl,
         status: 'SUBMITTED',
         submittedAt: new Date(),
+        title: fileType ?? file.name,
       },
       create: {
         teamId,
@@ -94,6 +96,35 @@ export async function POST(req: NextRequest) {
         submittedAt: new Date(),
       },
     })
+  } else {
+    // No milestone ID — create a new deliverable for review
+    await prisma.deliverable.create({
+      data: {
+        teamId,
+        title: fileType ?? file.name,
+        type: fileType ?? 'Other',
+        driveFileId,
+        fileUrl: driveFileUrl,
+        status: 'SUBMITTED',
+        submittedAt: new Date(),
+      }
+    })
+
+    // Notify faculty guide
+    const teamWithFaculty = await prisma.team.findUnique({
+      where: { id: teamId },
+      include: { facultyGuide: { include: { user: true } } }
+    })
+    if (teamWithFaculty?.facultyGuide?.user) {
+      await prisma.notification.create({
+        data: {
+          userId:  teamWithFaculty.facultyGuide.user.id,
+          title:   'New submission for review',
+          message: `Team ${teamWithFaculty.ventureName ?? teamWithFaculty.name} submitted "${fileType ?? file.name}" for review.`,
+          link:    `/faculty/teams/${teamId}`,
+        }
+      })
+    }
   }
 
   return NextResponse.json({

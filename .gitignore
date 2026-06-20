@@ -33,3 +33,6 @@ npm-debug.log*
 next-env.d.ts
 dvl-dashboard-2ab45998367c.json
 .env
+students_bulk_import.csv
+students_full.json
+backfill.js

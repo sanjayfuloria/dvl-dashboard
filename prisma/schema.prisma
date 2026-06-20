@@ -83,6 +83,9 @@ model StudentProfile {
   rollNumber  String?
   programme   String?  // MBA, BBA, etc.
   batch       String?  // 2024-26
+  enrollNo    String?
+  section     String?
+  dvlCourse   String?
 
   teamMembers TeamMember[]
 }

@@ -154,6 +154,12 @@ export default async function MilestonesPage() {
                                 📄 View in Google Drive
                               </a>
                             )}
+                            {submitted?.feedback && (
+                              <div className="mt-1 p-2 rounded-lg text-xs"
+                                   style={{ background: 'var(--dvl-purple-dim)', color: 'var(--dvl-purple)' }}>
+                                <span className="font-semibold">Faculty feedback: </span>{submitted.feedback}
+                              </div>
+                            )}
 
                             {/* Upload button for active phase */}
                             {phaseActive && submitted?.status !== 'APPROVED' && (
