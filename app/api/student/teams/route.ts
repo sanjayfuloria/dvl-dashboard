@@ -9,6 +9,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const scope = req.nextUrl.searchParams.get('scope') ?? 'section'
+  const courseFilter = req.nextUrl.searchParams.get('course') ?? null
 
   const sp = await prisma.studentProfile.findUnique({
     where: { userId: session.id },
@@ -16,34 +17,49 @@ export async function GET(req: NextRequest) {
   })
   if (!sp) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
 
-  const myTeamMember = sp.teamMembers[0] ?? null
-  const myTeam = myTeamMember?.team ?? null
-  const isIndividual = myTeam?.name.startsWith('__INDIVIDUAL__') ?? false
+  const primarySlot = { section: sp.section ?? '', course: sp.dvlCourse ?? '' }
+  const secondarySlots: { section: string; course: string }[] =
+    Array.isArray(sp.secondarySections) ? (sp.secondarySections as any[]) : []
+
+  const allSlots = [primarySlot, ...secondarySlots].filter(s => s.course)
+  const uniqueSlots = allSlots.filter((s, i, arr) =>
+    arr.findIndex(x => x.course === s.course && x.section === s.section) === i
+  )
+
+  // My teams keyed by course
+  const myTeams: Record<string, any> = {}
+  for (const tm of sp.teamMembers) {
+    const t = tm.team
+    myTeams[t.course] = {
+      id: t.id, name: t.name,
+      isIndividual: t.name.startsWith('__INDIVIDUAL__'),
+      course: t.course, memberCount: t.members.length,
+      teamMemberId: tm.id, role: tm.role,
+    }
+  }
 
   const allTeams = await prisma.team.findMany({
-    where: { NOT: { name: { startsWith: '__INDIVIDUAL__' } } },
+    where: {
+      NOT: { name: { startsWith: '__INDIVIDUAL__' } },
+      ...(courseFilter ? { course: courseFilter as any } : {}),
+    },
     include: { members: { include: { student: { include: { user: { select: { name: true } } } } } } },
     orderBy: { createdAt: 'desc' }
   })
 
-  // Filter by scope
-  const scopeFiltered = scope === 'section'
-    ? allTeams.filter(t => t.course === sp.dvlCourse || t.course === (sp.section?.split('-')[0]))
-    : allTeams
-
-  // Open = not full (< 5 members), and student not already in it
-  const openTeams = scopeFiltered.filter(t =>
-    t.members.length < 5 && !t.members.find(m => m.studentProfileId === sp.id)
-  )
+  const openTeams = allTeams.filter(t => {
+    if (t.members.length >= 5) return false
+    if (t.members.find(m => m.studentProfileId === sp.id)) return false
+    if (scope === 'section') {
+      const slot = uniqueSlots.find(s => s.course === t.course)
+      return !!slot
+    }
+    return true
+  })
 
   return NextResponse.json({
-    myTeam: myTeam ? {
-      id: myTeam.id,
-      name: myTeam.name,
-      isIndividual,
-      course: myTeam.course,
-      memberCount: myTeam.members.length,
-    } : null,
+    myTeams,
+    slots: uniqueSlots,
     openTeams: openTeams.map(t => ({
       id: t.id, name: t.name, course: t.course,
       sector: t.sector, ventureName: t.ventureName,
@@ -60,46 +76,37 @@ export async function POST(req: NextRequest) {
   if (!session || session.role !== 'STUDENT')
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const { action, teamId, teamName } = await req.json()
+  const { action, teamId, teamName, course } = await req.json()
 
   const sp = await prisma.studentProfile.findUnique({
     where: { userId: session.id },
-    include: { teamMembers: true }
+    include: { teamMembers: { include: { team: { include: { members: true } } } } }
   })
   if (!sp) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
 
-  // Leave current team
+  const targetCourse = course ?? sp.dvlCourse ?? 'MDT'
+  const currentTeam = sp.teamMembers.find(tm => tm.team.course === targetCourse)
+
   if (action === 'leave') {
-    // If Team Lead and team has other members, block leave
-    const membership = sp.teamMembers[0]
-    if (membership) {
-      const team = await prisma.team.findUnique({
-        where: { id: membership.teamId },
-        include: { members: true }
-      })
-      if (team && !team.name.startsWith('__INDIVIDUAL__') && membership.role === 'Team Lead' && team.members.length > 1) {
-        return NextResponse.json({ error: 'You are the Team Lead. Transfer leadership or ask an admin to reassign before leaving.' }, { status: 400 })
-      }
-      await prisma.teamMember.deleteMany({ where: { studentProfileId: sp.id } })
-      // If individual team or team is now empty, delete the team
-      if (team && (team.name.startsWith('__INDIVIDUAL__') || team.members.length <= 1)) {
-        await prisma.team.delete({ where: { id: team.id } }).catch(() => {})
-      }
-    }
+    if (!currentTeam) return NextResponse.json({ error: 'Not in a team for this course' }, { status: 400 })
+    const team = currentTeam.team
+    const memberCount = team.members.length
+    if (!team.name.startsWith('__INDIVIDUAL__') && currentTeam.role === 'Team Lead' && memberCount > 1)
+      return NextResponse.json({ error: 'You are the Team Lead. Ask an admin to reassign before leaving.' }, { status: 400 })
+    await prisma.teamMember.delete({ where: { id: currentTeam.id } })
+    const remaining = await prisma.teamMember.count({ where: { teamId: team.id } })
+    if (remaining === 0) await prisma.team.delete({ where: { id: team.id } }).catch(() => {})
     return NextResponse.json({ ok: true })
   }
 
-  // Check not already in a team
-  const alreadyInTeam = sp.teamMembers.length > 0
-  if (alreadyInTeam && action !== 'leave') {
-    return NextResponse.json({ error: 'You are already in a team. Leave your current team first.' }, { status: 400 })
-  }
+  if (currentTeam && action !== 'leave')
+    return NextResponse.json({ error: `You already have a team for ${targetCourse}. Leave it first.` }, { status: 400 })
 
   if (action === 'individual') {
     const t = await prisma.team.create({
       data: {
-        name: '__INDIVIDUAL__' + sp.id,
-        course: (sp.dvlCourse ?? 'MDT') as any,
+        name: '__INDIVIDUAL__' + sp.id + '_' + targetCourse,
+        course: targetCourse as any,
         members: { create: { studentProfileId: sp.id, role: 'Individual' } }
       }
     })
@@ -110,10 +117,8 @@ export async function POST(req: NextRequest) {
     if (!teamId) return NextResponse.json({ error: 'teamId required' }, { status: 400 })
     const t = await prisma.team.findUnique({ where: { id: teamId }, include: { members: true } })
     if (!t) return NextResponse.json({ error: 'Team not found' }, { status: 404 })
-    if (t.name.startsWith('__INDIVIDUAL__'))
-      return NextResponse.json({ error: 'Cannot join an individual project' }, { status: 400 })
-    if (t.members.length >= 5)
-      return NextResponse.json({ error: 'This team is full (max 5 members)' }, { status: 400 })
+    if (t.name.startsWith('__INDIVIDUAL__')) return NextResponse.json({ error: 'Cannot join an individual project' }, { status: 400 })
+    if (t.members.length >= 5) return NextResponse.json({ error: 'Team is full (max 5 members)' }, { status: 400 })
     await prisma.teamMember.create({ data: { teamId, studentProfileId: sp.id, role: 'Member' } })
     return NextResponse.json({ ok: true })
   }
@@ -121,15 +126,13 @@ export async function POST(req: NextRequest) {
   if (action === 'create') {
     if (!teamName?.trim()) return NextResponse.json({ error: 'Team name required' }, { status: 400 })
     const exists = await prisma.team.findFirst({ where: { name: teamName.trim() } })
-    if (exists) return NextResponse.json({ error: 'That team name is already taken. Please choose another.' }, { status: 400 })
+    if (exists) return NextResponse.json({ error: 'Team name already taken. Please choose another.' }, { status: 400 })
     let driveFolderId: string | null = null
-    if (process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID) {
+    if (process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID)
       driveFolderId = await createTeamDriveFolder(teamName.trim(), teamName.trim())
-    }
     const t = await prisma.team.create({
       data: {
-        name: teamName.trim(),
-        course: (sp.dvlCourse ?? 'MDT') as any,
+        name: teamName.trim(), course: targetCourse as any,
         driveFolderId,
         members: { create: { studentProfileId: sp.id, role: 'Team Lead' } }
       }

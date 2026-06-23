@@ -86,6 +86,7 @@ model StudentProfile {
   enrollNo    String?
   section     String?
   dvlCourse   String?
+  secondarySections Json? @default("[]")
 
   teamMembers TeamMember[]
 }
