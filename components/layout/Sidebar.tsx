@@ -31,6 +31,7 @@ const studentNav: NavSection[] = [
   {
     label: 'My Venture',
     items: [
+      { href: '/team', label: 'My Team', icon: Users },
       { href: '/venture', label: 'Project Profile', icon: Rocket },
       { href: '/milestones', label: 'Milestones', icon: CheckSquare },
       { href: '/ai-log', label: 'AI Build Log', icon: Bot },
