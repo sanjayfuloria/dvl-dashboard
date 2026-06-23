@@ -5,6 +5,7 @@ import { phaseLabel, phaseColor, healthColor, healthLabel, formatDate } from '@/
 import { Briefcase, Plus } from 'lucide-react'
 import Link from 'next/link'
 import { CreateTeamButton } from '@/components/admin/CreateTeamButton'
+import { DeleteTeamButton } from '@/components/admin/DeleteTeamButton'
 
 export const metadata = { title: 'Teams' }
 
@@ -53,6 +54,7 @@ export default async function AdminTeamsPage() {
                 <th>Members</th>
                 <th>Progress</th>
                 <th>Created</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -88,6 +90,9 @@ export default async function AdminTeamsPage() {
                   </td>
                   <td className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                     {formatDate(team.createdAt)}
+                  </td>
+                  <td>
+                    <DeleteTeamButton teamId={team.id} teamName={team.ventureName ?? team.name} />
                   </td>
                 </tr>
               ))}
