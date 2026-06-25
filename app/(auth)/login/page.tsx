@@ -86,6 +86,13 @@ export default function LoginPage() {
               </div>
             </div>
             {error && <p className="text-sm text-red-400 bg-red-400/10 px-3 py-2 rounded-lg">{error}</p>}
+            <div style={{ textAlign: 'right', marginBottom: 4 }}>
+              <a href="/dvl/forgot-password" style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}
+                onMouseOver={e=>(e.currentTarget.style.color='rgba(255,255,255,0.7)')}
+                onMouseOut={e=>(e.currentTarget.style.color='rgba(255,255,255,0.4)')}>
+                Forgot password?
+              </a>
+            </div>
             <button type="submit" disabled={loading}
               className="w-full flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-medium text-white disabled:opacity-50"
               style={{ background: 'var(--dvl-purple)' }}>

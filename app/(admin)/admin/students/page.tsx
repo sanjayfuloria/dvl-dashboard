@@ -1,80 +1,216 @@
 'use client'
 import { useState, useEffect, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { PageHeader } from '@/components/layout/PageHeader'
-import { Users, Search, UserCheck, UserX, RefreshCw } from 'lucide-react'
+import { Users, Search, UserX } from 'lucide-react'
+
 type S={id:string;userId:string;name:string|null;email:string;enrollNo:string|null;section:string|null;dvlCourse:string|null;team:{id:string;name:string;course:string}|null;teamRole:string|null}
 type T={id:string;name:string;course:string}
+
+const sc:Record<string,string>={
+  'MDT-A':'bg-purple-100 text-purple-700',
+  'MPB-A':'bg-teal-100 text-teal-700',
+  'MPB-B':'bg-blue-100 text-blue-700',
+  'B2B-B':'bg-amber-100 text-amber-700',
+}
+
 export default function Page(){
   const [students,setStudents]=useState<S[]>([])
   const [teams,setTeams]=useState<T[]>([])
   const [loading,setLoading]=useState(true)
   const [search,setSearch]=useState('')
   const [fSec,setFSec]=useState('ALL')
-  const [fTeam,setFTeam]=useState('ALL')
   const [assigning,setAssigning]=useState<string|null>(null)
   const [selTeam,setSelTeam]=useState<Record<string,string>>({})
   const [saving,setSaving]=useState<string|null>(null)
-  const [toast,setToast]=useState<string|null>(null)
-  const showToast=(m:string)=>{setToast(m);setTimeout(()=>setToast(null),3000)}
+  const [toast,setToast]=useState('')
+  const [editing,setEditing]=useState<S|null>(null)
+  const [editForm,setEditForm]=useState({section:'',dvlCourse:'',secondary:''})
+  const [editSaving,setEditSaving]=useState(false)
+  const [mounted,setMounted]=useState(false)
+
+  useEffect(()=>{ setMounted(true) },[])
+
   async function load(){
     setLoading(true)
-    const [sr,tr]=await Promise.all([fetch('/dvl/api/admin/students'),fetch('/dvl/api/admin/teams')])
-    if(sr.ok)setStudents(await sr.json())
-    if(tr.ok){const d=await tr.json();setTeams((d.teams??d).filter((t:T)=>!t.name.startsWith('__INDIVIDUAL__')))}
-    setLoading(false)
+    const [sr,tr]=await Promise.all([fetch('/dvl/api/admin/students').then(r=>r.json()),fetch('/dvl/api/teams').then(r=>r.json())])
+    setStudents(sr||[]);setTeams(tr||[]);setLoading(false)
   }
   useEffect(()=>{load()},[])
-  const sections=useMemo(()=>['ALL',...Array.from(new Set(students.map(s=>s.section).filter(Boolean)as string[])).sort()],[students])
-  const filtered=useMemo(()=>students.filter(s=>{
-    const q=search.toLowerCase()
-    return(!q||s.name?.toLowerCase().includes(q)||s.email.includes(q)||(s.enrollNo??'').includes(q))
-      &&(fSec==='ALL'||s.section===fSec)
-      &&(fTeam==='ALL'?true:fTeam==='assigned'?!!s.team:!s.team)
-  }),[students,search,fSec,fTeam])
-  async function assign(sid:string,tid:string){
-    setSaving(sid)
-    const r=await fetch('/dvl/api/admin/students/assign',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({studentProfileId:sid,teamId:tid})})
-    showToast(r.ok?'Assigned!':'Failed');if(r.ok)await load();setSaving(null);setAssigning(null)
+
+  const sections=useMemo(()=>['ALL',...Array.from(new Set(students.map(s=>s.section).filter(Boolean) as string[])).sort()],[students])
+  const filtered=students.filter(s=>
+    (!search||s.name?.toLowerCase().includes(search.toLowerCase())||s.email.toLowerCase().includes(search.toLowerCase())||s.enrollNo?.includes(search))
+    &&(fSec==='ALL'||s.section===fSec)
+  )
+
+  function showToast(m:string){setToast(m);setTimeout(()=>setToast(''),3000)}
+
+  async function assign(studentId:string,teamId:string){
+    setSaving(studentId)
+    await fetch('/dvl/api/admin/students/assign',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({studentId,teamId})})
+    setSaving(null);setAssigning(null);showToast('Student assigned');load()
   }
-  async function remove(sid:string){
-    setSaving(sid)
-    await fetch('/dvl/api/admin/students/assign',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({studentProfileId:sid})})
-    showToast('Removed');await load();setSaving(null)
+  async function remove(studentId:string){
+    setSaving(studentId)
+    await fetch('/dvl/api/admin/students/assign',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({studentId})})
+    setSaving(null);showToast('Student removed from team');load()
   }
-  const sc:Record<string,string>={'MDT-A':'bg-violet-100 text-violet-800','MPB-A':'bg-blue-100 text-blue-800','MPB-B':'bg-cyan-100 text-cyan-800','B2B-B':'bg-amber-100 text-amber-800'}
-  const stats={total:students.length,assigned:students.filter(s=>s.team&&!s.team.name.startsWith('__INDIVIDUAL__')).length,individual:students.filter(s=>s.team?.name.startsWith('__INDIVIDUAL__')).length,unassigned:students.filter(s=>!s.team).length}
+
+  async function saveEdit(){
+    if(!editing)return
+    setEditSaving(true)
+    let secondarySections:{section:string;course:string}[]=[]
+    if(editForm.secondary.trim()){
+      secondarySections=editForm.secondary.split(',').map(s=>{
+        const sec=s.trim().toUpperCase()
+        const course=sec.startsWith('MDT')?'MDT':sec.startsWith('MPB')?'MPB':sec.startsWith('B2B')?'B2B':''
+        return{section:sec,course}
+      }).filter(s=>s.course)
+    }
+    const res=await fetch('/dvl/api/admin/students',{
+      method:'PATCH',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({userId:editing.userId,section:editForm.section,dvlCourse:editForm.dvlCourse,secondarySections})
+    })
+    setEditSaving(false)
+    if(res.ok){setEditing(null);showToast('✓ Student profile updated');load()}
+  }
+
   return(
-    <div className="space-y-6">
-      <PageHeader title="Student Roster" subtitle={`AY 2026-27 · Semester 3 · ${stats.total} students`} />
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {([['Total',stats.total,'text-gray-900'],['In a Team',stats.assigned,'text-green-600'],['Individual',stats.individual,'text-blue-600'],['Unassigned',stats.unassigned,'text-amber-600']]as[string,number,string][]).map(([l,v,c])=>(
-          <div key={l} className="bg-white rounded-xl border border-gray-100 p-4"><p className="text-xs text-gray-500 uppercase tracking-wide font-medium">{l}</p><p className={`text-3xl font-bold mt-1 ${c}`}>{v}</p></div>
-        ))}
+    <div className="page-enter">
+      <PageHeader title="Students" subtitle={`${students.length} students in the programme`}
+        actions={<button onClick={load} className="btn-secondary flex items-center gap-2 text-sm"><Users className="w-4 h-4"/>Refresh</button>}/>
+      <div className="page-body space-y-4">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="relative flex-1 min-w-48">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"/>
+            <input className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none" placeholder="Search name, email, enrol no…" value={search} onChange={e=>setSearch(e.target.value)}/>
+          </div>
+          <select className="px-3 py-2 rounded-lg border border-gray-200 text-sm" value={fSec} onChange={e=>setFSec(e.target.value)}>
+            {sections.map(s=><option key={s} value={s}>{s==='ALL'?'All Sections':s}</option>)}
+          </select>
+          <span className="text-sm text-gray-500">{filtered.length} shown</span>
+        </div>
+
+        <div className="card overflow-hidden p-0">
+          {loading?(
+            <div className="text-center py-12 text-gray-400">Loading…</div>
+          ):(
+            <table className="data-table">
+              <thead>
+                <tr>{['Student','Enrol No','Section','Team','Actions'].map(h=>(
+                  <th key={h}>{h}</th>
+                ))}</tr>
+              </thead>
+              <tbody>
+                {filtered.map(s=>(
+                  <tr key={s.id}>
+                    <td>
+                      <p className="font-medium text-sm">{s.name??'—'}</p>
+                      <p className="text-xs text-gray-400">{s.email}</p>
+                    </td>
+                    <td className="text-sm font-mono text-gray-600">{s.enrollNo??'—'}</td>
+                    <td>
+                      {s.section
+                        ?<span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${sc[s.section]??'bg-gray-100 text-gray-700'}`}>{s.section}</span>
+                        :'—'}
+                    </td>
+                    <td>
+                      {s.team
+                        ?<div><p className="text-sm font-medium">{s.team.name}</p><p className="text-xs text-gray-400">{s.team.course} · {s.teamRole}</p></div>
+                        :<span className="text-xs text-gray-400">No team</span>}
+                    </td>
+                    <td>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {/* Edit section */}
+                        <button onClick={()=>{setEditing(s);setEditForm({section:s.section??'',dvlCourse:s.dvlCourse??'',secondary:''})}}
+                          className="text-xs px-2 py-1 rounded border border-gray-200 text-gray-600 hover:bg-gray-50">
+                          ✏ Edit
+                        </button>
+                        {/* Assign/reassign team */}
+                        {assigning===s.id?(
+                          <div className="flex items-center gap-1">
+                            <select className="text-xs px-2 py-1 rounded border border-gray-200" value={selTeam[s.id]??''} onChange={e=>setSelTeam(p=>({...p,[s.id]:e.target.value}))}>
+                              <option value="">— pick team —</option>
+                              {teams.map(t=><option key={t.id} value={t.id}>{t.name} ({t.course})</option>)}
+                            </select>
+                            <button disabled={!selTeam[s.id]||saving===s.id} onClick={()=>assign(s.id,selTeam[s.id])} className="text-xs px-2 py-1 bg-violet-600 text-white rounded disabled:opacity-40">{saving===s.id?'…':'Assign'}</button>
+                            <button onClick={()=>setAssigning(null)} className="text-xs px-2 py-1 border border-gray-200 rounded">✕</button>
+                          </div>
+                        ):(
+                          <button onClick={()=>setAssigning(s.id)} className="text-xs px-2 py-1 border border-violet-200 text-violet-700 rounded hover:bg-violet-50">
+                            {s.team?'Reassign':'Assign'}
+                          </button>
+                        )}
+                        {s.team&&(
+                          <button disabled={saving===s.id} onClick={()=>remove(s.id)} className="text-xs px-2 py-1 border border-red-200 text-red-500 rounded hover:bg-red-50 disabled:opacity-40">
+                            <UserX className="w-3 h-3"/>
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
       </div>
-      <div className="bg-white rounded-xl border border-gray-100 p-4 flex flex-wrap gap-3 items-center">
-        <div className="relative flex-1 min-w-[200px]"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"/><input className="w-full pl-9 pr-4 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-violet-300" placeholder="Search name, email, enrol no…" value={search} onChange={e=>setSearch(e.target.value)}/></div>
-        <select className="px-3 py-2 rounded-lg border border-gray-200 text-sm" value={fSec} onChange={e=>setFSec(e.target.value)}>{sections.map(s=><option key={s} value={s}>{s==='ALL'?'All Sections':s}</option>)}</select>
-        <select className="px-3 py-2 rounded-lg border border-gray-200 text-sm" value={fTeam} onChange={e=>setFTeam(e.target.value)}><option value="ALL">All students</option><option value="assigned">In a team</option><option value="unassigned">Unassigned</option></select>
-        <button onClick={load} className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50"><RefreshCw className="w-4 h-4 text-gray-500"/></button>
-      </div>
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-        {loading?<div className="p-12 text-center text-gray-400 text-sm">Loading…</div>:filtered.length===0?<div className="p-12 text-center text-gray-400 text-sm">No students match.</div>:(
-          <div className="overflow-x-auto"><table className="w-full text-sm">
-            <thead><tr className="border-b border-gray-100 bg-gray-50">{['Student','Enrol No','Section','Team','Actions'].map(h=><th key={h} className="text-left px-4 py-3 font-medium text-gray-500 text-xs uppercase tracking-wide">{h}</th>)}</tr></thead>
-            <tbody>{filtered.map((s,i)=>{
-              const isInd=s.team?.name.startsWith('__INDIVIDUAL__')
-              return(<tr key={s.id} className={`border-b border-gray-50 hover:bg-gray-50/50 ${i%2?'bg-gray-50/30':''}`}>
-                <td className="px-4 py-3"><p className="font-medium text-gray-900">{s.name??'—'}</p><p className="text-xs text-gray-400">{s.email}</p></td>
-                <td className="px-4 py-3 text-gray-600 font-mono text-xs">{s.enrollNo??'—'}</td>
-                <td className="px-4 py-3">{s.section?<span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${sc[s.section]??'bg-gray-100 text-gray-700'}`}>{s.section}</span>:'—'}</td>
-                <td className="px-4 py-3">{isInd?<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700"><UserCheck className="w-3 h-3"/>Individual</span>:s.team?<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700"><Users className="w-3 h-3"/>{s.team.name}</span>:<span className="text-xs text-gray-400 italic">Unassigned</span>}</td>
-                <td className="px-4 py-3">{assigning===s.id?(<div className="flex items-center gap-2"><select className="text-xs px-2 py-1 rounded border border-gray-200" value={selTeam[s.id]??''} onChange={e=>setSelTeam(p=>({...p,[s.id]:e.target.value}))}><option value="">— pick team —</option>{teams.map(t=><option key={t.id} value={t.id}>{t.name} ({t.course})</option>)}</select><button disabled={!selTeam[s.id]||saving===s.id} onClick={()=>assign(s.id,selTeam[s.id])} className="text-xs px-2 py-1 bg-violet-600 text-white rounded disabled:opacity-40">{saving===s.id?'…':'Assign'}</button><button onClick={()=>setAssigning(null)} className="text-xs px-2 py-1 border border-gray-200 rounded">Cancel</button></div>):(<div className="flex items-center gap-2"><button onClick={()=>setAssigning(s.id)} className="text-xs px-3 py-1 border border-violet-200 text-violet-700 rounded hover:bg-violet-50">{s.team?'Reassign':'Assign Team'}</button>{s.team&&<button disabled={saving===s.id} onClick={()=>remove(s.id)} className="text-xs px-2 py-1 border border-red-200 text-red-500 rounded hover:bg-red-50 disabled:opacity-40"><UserX className="w-3 h-3"/></button>}</div>)}</td>
-              </tr>)
-            })}</tbody>
-          </table></div>
-        )}
-      </div>
+
       {toast&&<div className="fixed bottom-6 right-6 bg-gray-900 text-white text-sm px-4 py-3 rounded-xl shadow-lg z-50">{toast}</div>}
+
+      {editing && mounted && createPortal(
+        <div style={{position:'fixed',inset:0,zIndex:9999,background:'rgba(0,0,0,0.5)',display:'flex',alignItems:'center',justifyContent:'center',padding:16}}
+          onClick={e=>{if(e.target===e.currentTarget)setEditing(null)}}>
+          <div style={{background:'white',borderRadius:16,padding:28,maxWidth:480,width:'100%',boxShadow:'0 24px 80px rgba(0,0,0,0.25)'}}>
+            <h2 style={{fontSize:18,fontWeight:700,marginBottom:4}}>Edit Student Profile</h2>
+            <p style={{fontSize:13,color:'#6b7280',marginBottom:20}}>{editing.name} · {editing.email}</p>
+
+            <div style={{marginBottom:14}}>
+              <label style={{fontSize:12,fontWeight:600,display:'block',marginBottom:6}}>Primary Section</label>
+              <select value={editForm.section} onChange={e=>{
+                const sec=e.target.value
+                const course=sec.startsWith('MDT')?'MDT':sec.startsWith('MPB')?'MPB':sec.startsWith('B2B')?'B2B':''
+                setEditForm(f=>({...f,section:sec,dvlCourse:course}))
+              }} style={{width:'100%',padding:'8px 12px',borderRadius:8,border:'1px solid #e5e7eb',fontSize:14,boxSizing:'border-box' as any}}>
+                <option value="">— select section —</option>
+                <option value="MDT-A">MDT-A — Managing Digital Transformation</option>
+                <option value="MPB-A">MPB-A — Marketing for Platform Businesses</option>
+                <option value="MPB-B">MPB-B — Marketing for Platform Businesses</option>
+                <option value="B2B-B">B2B-B — Business-to-Business Marketing</option>
+              </select>
+            </div>
+
+            <div style={{marginBottom:14}}>
+              <label style={{fontSize:12,fontWeight:600,display:'block',marginBottom:4}}>Primary Course (auto-set)</label>
+              <input value={editForm.dvlCourse} readOnly style={{width:'100%',padding:'8px 12px',borderRadius:8,border:'1px solid #e5e7eb',fontSize:14,background:'#f9fafb',color:'#6b7280',boxSizing:'border-box' as any}}/>
+            </div>
+
+            <div style={{marginBottom:20}}>
+              <label style={{fontSize:12,fontWeight:600,display:'block',marginBottom:4}}>
+                Additional Sections <span style={{fontWeight:400,color:'#9ca3af'}}>(comma-separated, e.g. MPB-A, B2B-B)</span>
+              </label>
+              <input value={editForm.secondary} onChange={e=>setEditForm(f=>({...f,secondary:e.target.value}))}
+                placeholder="e.g. MPB-A  or  MPB-A, B2B-B"
+                style={{width:'100%',padding:'8px 12px',borderRadius:8,border:'1px solid #e5e7eb',fontSize:14,boxSizing:'border-box' as any}}/>
+              <p style={{fontSize:11,color:'#9ca3af',marginTop:4}}>Leave blank if student is in one section only.</p>
+            </div>
+
+            <div style={{display:'flex',gap:12}}>
+              <button onClick={()=>setEditing(null)} disabled={editSaving}
+                style={{flex:1,padding:'10px',borderRadius:8,border:'1px solid #e5e7eb',background:'white',cursor:'pointer',fontSize:14}}>
+                Cancel
+              </button>
+              <button onClick={saveEdit} disabled={editSaving||!editForm.section}
+                style={{flex:1,padding:'10px',borderRadius:8,border:'none',background:'#5B4BD4',color:'white',cursor:editForm.section?'pointer':'not-allowed',fontSize:14,fontWeight:600,opacity:(!editForm.section||editSaving)?0.5:1}}>
+                {editSaving?'Saving…':'Save changes'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   )
 }
