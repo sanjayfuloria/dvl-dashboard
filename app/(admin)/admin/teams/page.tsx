@@ -79,7 +79,31 @@ export default async function AdminTeamsPage() {
                   </td>
                   <td className="text-sm">{team.facultyGuide?.user.name ?? '—'}</td>
                   <td className="text-sm">{team.mentor?.user.name ?? '—'}</td>
-                  <td className="text-sm font-medium">{team.members.length}</td>
+                  <td>
+                    {(() => {
+                      const count = team.members.length
+                      const isIndividual = team.members.some((m: any) => m.role === 'Individual')
+                      const isFull = count >= 5
+                      return (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold">{count}</span>
+                          {isIndividual ? (
+                            <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{background:'#EFF6FF',color:'#1D4ED8'}}>
+                              Individual
+                            </span>
+                          ) : isFull ? (
+                            <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{background:'#F0FDF4',color:'#15803D'}}>
+                              Full · 5/5
+                            </span>
+                          ) : (
+                            <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{background:'#FEF3C7',color:'#92400E'}}>
+                              {count}/5
+                            </span>
+                          )}
+                        </div>
+                      )
+                    })()}
+                  </td>
                   <td>
                     <div className="flex items-center gap-2">
                       <div className="progress-bar w-16">

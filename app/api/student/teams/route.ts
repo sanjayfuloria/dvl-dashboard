@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     const t = tm.team
     myTeams[t.course] = {
       id: t.id, name: t.name,
-      isIndividual: t.name.startsWith('__INDIVIDUAL__'),
+      isIndividual: tm.role === 'Individual',
       course: t.course, memberCount: t.members.length,
       teamMemberId: tm.id, role: tm.role,
     }
@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
 
   const allTeams = await prisma.team.findMany({
     where: {
-      NOT: { name: { startsWith: '__INDIVIDUAL__' } },
+      NOT: { members: { some: { role: 'Individual' } } },
       ...(courseFilter ? { course: courseFilter as any } : {}),
     },
     include: { members: { include: { student: { include: { user: { select: { name: true } } } } } } },
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
     if (!currentTeam) return NextResponse.json({ error: 'Not in a team for this course' }, { status: 400 })
     const team = currentTeam.team
     const memberCount = team.members.length
-    if (!team.name.startsWith('__INDIVIDUAL__') && currentTeam.role === 'Team Lead' && memberCount > 1)
+    if (currentTeam.role !== 'Individual' && currentTeam.role === 'Team Lead' && memberCount > 1)
       return NextResponse.json({ error: 'You are the Team Lead. Ask an admin to reassign before leaving.' }, { status: 400 })
     await prisma.teamMember.delete({ where: { id: currentTeam.id } })
     const remaining = await prisma.teamMember.count({ where: { teamId: team.id } })
@@ -103,9 +103,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `You already have a team for ${targetCourse}. Leave it first.` }, { status: 400 })
 
   if (action === 'individual') {
+    if (!teamName?.trim()) return NextResponse.json({ error: 'Project name required' }, { status: 400 })
+    const exists = await prisma.team.findFirst({ where: { name: teamName.trim() } })
+    if (exists) return NextResponse.json({ error: 'That name is already taken. Please choose another.' }, { status: 400 })
     const t = await prisma.team.create({
       data: {
-        name: '__INDIVIDUAL__' + sp.id + '_' + targetCourse,
+        name: teamName.trim(),
         course: targetCourse as any,
         members: { create: { studentProfileId: sp.id, role: 'Individual' } }
       }
@@ -117,7 +120,9 @@ export async function POST(req: NextRequest) {
     if (!teamId) return NextResponse.json({ error: 'teamId required' }, { status: 400 })
     const t = await prisma.team.findUnique({ where: { id: teamId }, include: { members: true } })
     if (!t) return NextResponse.json({ error: 'Team not found' }, { status: 404 })
-    if (t.name.startsWith('__INDIVIDUAL__')) return NextResponse.json({ error: 'Cannot join an individual project' }, { status: 400 })
+    // Check if team has an Individual member (1-person project)
+    const isIndTeam = t.members.some((m: any) => m.role === 'Individual')
+    if (isIndTeam) return NextResponse.json({ error: 'Cannot join an individual project' }, { status: 400 })
     if (t.members.length >= 5) return NextResponse.json({ error: 'Team is full (max 5 members)' }, { status: 400 })
     await prisma.teamMember.create({ data: { teamId, studentProfileId: sp.id, role: 'Member' } })
     return NextResponse.json({ ok: true })

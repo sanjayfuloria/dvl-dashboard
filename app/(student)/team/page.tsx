@@ -242,7 +242,7 @@ export default function Page() {
 
                   <div className="card cursor-pointer hover:shadow-md transition-shadow text-center space-y-2"
                     style={{border:'2px dashed #2563EB',background:'#EFF6FF'}}
-                    onClick={()=>act('individual',slot.course)}>
+                    onClick={()=>setShowCreate('__IND__'+slot.course)}>
                     <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto" style={{background:'#2563EB'}}>
                       <User className="w-6 h-6 text-white"/>
                     </div>
@@ -254,7 +254,7 @@ export default function Page() {
                 </div>
               )}
 
-              {/* Create form */}
+              {/* Create group team form */}
               {showCreate === slot.course && !myTeam && (
                 <div className="card space-y-3" style={{border:`1px solid ${c.badge}`}}>
                   <div>
@@ -272,6 +272,30 @@ export default function Page() {
                     <button disabled={saving||!newName.trim()} onClick={()=>act('create',slot.course,undefined,newName)}
                       className="btn-primary disabled:opacity-40">
                       {saving?'Creating…':'Create'}
+                    </button>
+                    <button onClick={()=>setShowCreate(null)} className="btn-secondary">Cancel</button>
+                  </div>
+                </div>
+              )}
+
+              {/* Individual project name form */}
+              {showCreate === '__IND__'+slot.course && !myTeam && (
+                <div className="card space-y-3" style={{border:'1px solid #2563EB',background:'#EFF6FF'}}>
+                  <div>
+                    <p className="font-semibold text-sm" style={{color:'#1D4ED8'}}>Name your individual project</p>
+                    <p className="text-xs mt-0.5" style={{color:'var(--text-secondary)'}}>
+                      This is a 1-member project — only you. Give it a name that reflects your venture idea.
+                    </p>
+                  </div>
+                  <div className="flex gap-3">
+                    <input className="flex-1 px-3 py-2 rounded-lg border text-sm focus:outline-none"
+                      style={{borderColor:'#2563EB'}}
+                      placeholder="Project name (e.g. SoloVenture, MyStartup…)"
+                      value={newName} onChange={e=>setNewName(e.target.value)}
+                      onKeyDown={e=>e.key==='Enter'&&newName.trim()&&act('individual',slot.course,undefined,newName)}/>
+                    <button disabled={saving||!newName.trim()} onClick={()=>act('individual',slot.course,undefined,newName)}
+                      className="btn-primary disabled:opacity-40" style={{background:'#2563EB'}}>
+                      {saving?'Creating…':'Confirm'}
                     </button>
                     <button onClick={()=>setShowCreate(null)} className="btn-secondary">Cancel</button>
                   </div>

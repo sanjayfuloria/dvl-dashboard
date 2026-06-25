@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 import {
   Zap, LayoutDashboard, Rocket, CheckSquare, Bot, BookOpen,
   Users, ClipboardList, BarChart3, Settings, LogOut, ChevronRight,
-  Briefcase, FileText, Star, Home, UserCog, Library, Trophy, Lock,
+  Briefcase, FileText, Star, Home, UserCog, Library, Trophy, Lock, Mail,
   TrendingUp, Calendar, FolderOpen
 } from 'lucide-react'
 
@@ -105,6 +105,7 @@ const adminNav: NavSection[] = [
   {
     label: 'System',
     items: [
+      { href: '/admin/messages', label: 'Messages', icon: Mail },
       { href: '/admin/settings', label: 'Settings', icon: Settings },
     { href: '/change-password', label: 'Change Password', icon: Lock },
     ],
