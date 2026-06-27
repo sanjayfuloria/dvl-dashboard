@@ -84,15 +84,22 @@
 
   /* Main content area */
   .main-content {
-    margin-left: var(--sidebar-w);
+    margin-left: 0;
+    padding-top: 56px; /* mobile top bar */
     @apply min-h-screen;
   }
+  @media (min-width: 768px) {
+    .main-content {
+      margin-left: var(--sidebar-w);
+      padding-top: 0;
+    }
+  }
   .page-header {
-    @apply sticky top-0 z-30 flex items-center justify-between px-8 py-4 bg-[var(--surface-card)] border-b;
+    @apply sticky top-0 z-30 flex items-center justify-between px-4 md:px-8 py-4 bg-[var(--surface-card)] border-b;
     border-color: var(--border);
   }
   .page-body {
-    @apply px-8 py-6;
+    @apply px-4 py-4 md:px-8 md:py-6;
   }
 
   /* Cards */
@@ -163,6 +170,9 @@
   /* Table */
   .data-table {
     @apply w-full text-sm;
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
   .data-table th {
     @apply text-left px-4 py-3 font-medium border-b text-xs uppercase tracking-wide;

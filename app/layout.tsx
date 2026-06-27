@@ -9,13 +9,31 @@ const inter = Inter({
   display: 'swap',
 })
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+}
+
 export const metadata: Metadata = {
   title: {
     template: '%s | DVL Dashboard',
     default: 'Digital Venture Lab — IFHE Hyderabad',
   },
   description: 'The operating system for the Digital Venture Lab at ICFAI Foundation for Higher Education.',
-  icons: { icon: '/favicon.ico' },
+  manifest: '/dvl/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'DVL Dashboard',
+  },
+  icons: {
+    icon: '/dvl/icons/icon-192.png',
+    apple: '/dvl/icons/apple-touch-icon.png',
+  },
+  themeColor: '#7c6af7',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -24,6 +42,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen bg-surface font-sans antialiased">
         {children}
         <Toaster />
+        <script dangerouslySetInnerHTML={{__html: `
+          if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+              navigator.serviceWorker.register('/dvl/sw.js', { scope: '/dvl/' })
+                .then(function(reg) { console.log('SW registered:', reg.scope); })
+                .catch(function(err) { console.log('SW failed:', err); });
+            });
+          }
+        `}} />
       </body>
     </html>
   )
