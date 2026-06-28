@@ -81,7 +81,7 @@ export default async function AdminDashboard() {
         title="Programme Dashboard"
         subtitle="Digital Venture Lab — IFHE Hyderabad"
         actions={
-          <Link href="/admin/users" className="btn-primary">
+          <Link href="/admin/students" className="btn-primary text-xs md:text-sm px-3 py-2 md:px-4 md:py-2">
             <Users className="w-4 h-4" /> Manage users
           </Link>
         }
@@ -89,7 +89,7 @@ export default async function AdminDashboard() {
 
       <div className="page-body space-y-6">
         {/* Top stats */}
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           {topStats.map((s) => (
             <div key={s.label} className="stat-card">
               <div className="flex items-center justify-between mb-3">
@@ -98,15 +98,15 @@ export default async function AdminDashboard() {
                   <s.icon className="w-4.5 h-4.5" style={{ color: s.color, width: 18, height: 18 }} />
                 </div>
               </div>
-              <p className="text-3xl font-semibold">{s.value}</p>
+              <p className="text-2xl md:text-3xl font-semibold">{s.value}</p>
               <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>{s.label}</p>
             </div>
           ))}
         </div>
 
         {/* User breakdown + phase breakdown */}
-        <div className="grid grid-cols-3 gap-4">
-          <div className="card col-span-1">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="card">
             <h3 className="mb-4">User breakdown</h3>
             <div className="space-y-3">
               {[
@@ -127,7 +127,7 @@ export default async function AdminDashboard() {
             </div>
           </div>
 
-          <div className="card col-span-1">
+          <div className="card">
             <h3 className="mb-4">Teams by phase</h3>
             <div className="space-y-3">
               {stats.phaseBreakdown.map((p) => (
@@ -148,10 +148,10 @@ export default async function AdminDashboard() {
             </div>
           </div>
 
-          <div className="card col-span-1">
+          <div className="card">
             <h3 className="mb-4">Milestone progress</h3>
             <div className="text-center py-3">
-              <p className="text-4xl font-semibold">{stats.milestonesApproved}</p>
+              <p className="text-3xl md:text-4xl font-semibold">{stats.milestonesApproved}</p>
               <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
                 of {stats.milestonesTotal} approved
               </p>
@@ -169,7 +169,7 @@ export default async function AdminDashboard() {
         </div>
 
         {/* Course breakdown */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {stats.courseBreakdown.map((c) => (
             <div key={c.course} className="card flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold text-white shrink-0"

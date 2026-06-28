@@ -33,7 +33,6 @@ export const metadata: Metadata = {
     icon: '/dvl/icons/icon-192.png',
     apple: '/dvl/icons/apple-touch-icon.png',
   },
-  themeColor: '#7c6af7',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -185,7 +185,7 @@ export default function MessagesPage() {
                 <li>• Individual: password resets, personal follow-ups</li>
                 <li>• Broadcast: announcements, deadlines, reminders</li>
                 <li>• Filter by section for targeted messages</li>
-                <li>• Powered by Brevo — no daily send limits</li>
+                <li>• Powered by Google SMTP — no daily send limits</li>
               </ul>
             </div>
           </div>
