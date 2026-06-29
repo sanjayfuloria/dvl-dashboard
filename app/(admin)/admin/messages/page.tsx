@@ -1,13 +1,13 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { PageHeader } from '@/components/layout/PageHeader'
-import { Send, Users, User, CheckCircle2, AlertCircle, Loader2, Search } from 'lucide-react'
+import { Send, Users, User, UserCog, CheckCircle2, AlertCircle, Loader2, Search } from 'lucide-react'
 
 type Student = { id: string; name: string|null; email: string; section: string|null; course: string|null }
 const SECTIONS = ['MDT-A','MPB-A','MPB-B','B2B-B']
 
 export default function MessagesPage() {
-  const [mode, setMode]         = useState<'individual'|'broadcast'>('individual')
+  const [mode, setMode]         = useState<'individual'|'broadcast'|'faculty'>('individual')
   const [students, setStudents] = useState<Student[]>([])
   const [search, setSearch]     = useState('')
   const [selected, setSelected] = useState<Student|null>(null)
@@ -35,6 +35,7 @@ export default function MessagesPage() {
     const payload: any = { mode, subject, body }
     if (mode === 'individual') payload.userId = selected!.id
     if (mode === 'broadcast' && section !== 'all') payload.section = section
+    // faculty mode sends as-is with mode='faculty'
     const res = await fetch('/dvl/api/admin/messages', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) })
     const data = await res.json()
     setSending(false)
@@ -63,12 +64,17 @@ export default function MessagesPage() {
           <div className="col-span-3 space-y-4">
 
             <div className="card p-1.5 flex gap-1.5" style={{background:'var(--surface-raised)'}}>
-              {(['individual','broadcast'] as const).map(m => (
-                <button key={m} onClick={()=>{setMode(m);setResult(null)}}
+              {([
+                {id:'individual',label:'Individual',icon:User},
+                {id:'broadcast',label:'Broadcast',icon:Users},
+                {id:'faculty',label:'Faculty & Staff',icon:UserCog},
+              ] as const).map(m => (
+                <button key={m.id} onClick={()=>{setMode(m.id as any);setResult(null)}}
                   className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-semibold transition-all"
-                  style={{background:mode===m?'white':'transparent',color:mode===m?'var(--dvl-purple)':'var(--text-muted)',boxShadow:mode===m?'0 1px 4px rgba(0,0,0,0.1)':'none'}}>
-                  {m==='individual'?<User className="w-4 h-4"/>:<Users className="w-4 h-4"/>}
-                  {m==='individual'?'Individual':'Broadcast'}
+                  style={{background:mode===m.id?'white':'transparent',color:mode===m.id?'var(--dvl-purple)':'var(--text-muted)',boxShadow:mode===m.id?'0 1px 4px rgba(0,0,0,0.1)':'none'}}>
+                  <m.icon className="w-4 h-4"/>
+                  <span className="hidden sm:inline">{m.label}</span>
+                  <span className="sm:hidden">{m.id==='faculty'?'Faculty':m.label}</span>
                 </button>
               ))}
             </div>
@@ -121,6 +127,16 @@ export default function MessagesPage() {
               </div>
             )}
 
+            {/* Faculty & Staff info */}
+            {mode==='faculty' && (
+              <div className="card space-y-2" style={{background:'#EFF6FF',border:'1px solid #BFDBFE'}}>
+                <p className="font-semibold text-sm" style={{color:'#1D4ED8'}}>Faculty & Staff recipients</p>
+                <p className="text-xs" style={{color:'#1D4ED8'}}>
+                  This will send to all Faculty, Admin, and Mentor accounts · CC: sanjay.fuloria@ibsindia.org
+                </p>
+              </div>
+            )}
+
             <div className="card space-y-2">
               <label className="text-sm font-semibold">Subject</label>
               <input className="w-full px-3 py-2 rounded-lg border text-sm focus:outline-none" style={{borderColor:'var(--border-default)'}}
@@ -153,6 +169,8 @@ export default function MessagesPage() {
                 : <><Send className="w-4 h-4"/>
                     {mode==='individual'
                       ? `Send to ${selected?.name ?? 'selected student'}`
+                      : mode==='faculty'
+                      ? 'Send to all Faculty & Staff'
                       : `Broadcast to ${broadcastCount} student${broadcastCount!==1?'s':''}`}
                   </>}
             </button>

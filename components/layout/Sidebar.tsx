@@ -33,6 +33,7 @@ const adminNav: NavSection[] = [
   { items: [{ href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard }] },
   { label: 'Manage', items: [
     { href: '/admin/students', label: 'Students', icon: UserCog },
+    { href: '/admin/users', label: 'Faculty & Staff', icon: Users },
     { href: '/admin/teams', label: 'Teams', icon: Briefcase },
     { href: '/admin/milestones', label: 'Milestones', icon: CheckSquare },
     { href: '/admin/resources', label: 'Resources', icon: Library },

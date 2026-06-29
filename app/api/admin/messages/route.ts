@@ -99,6 +99,12 @@ export async function POST(req: NextRequest) {
       select: { email: true, name: true },
     })
     recipients = students.map(s => ({ email: s.email, name: s.name ?? s.email }))
+  } else if (mode === 'faculty') {
+    const staff = await prisma.user.findMany({
+      where: { role: { not: 'STUDENT' }, NOT: { email: { contains: 'teststudent' } } },
+      select: { email: true, name: true },
+    })
+    recipients = staff.map(s => ({ email: s.email, name: s.name ?? s.email }))
   } else {
     return NextResponse.json({ error: 'Invalid mode' }, { status: 400 })
   }
@@ -125,14 +131,15 @@ export async function GET() {
   if (!session || session.role !== 'ADMIN')
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const students = await prisma.user.findMany({
-    where: { role: 'STUDENT', NOT: { email: { contains: 'teststudent' } } },
+  const users = await prisma.user.findMany({
+    where: { NOT: { email: { contains: 'teststudent' } } },
     include: { studentProfile: { select: { section: true, dvlCourse: true } } },
     orderBy: { name: 'asc' },
   })
-  return NextResponse.json(students.map(s => ({
+  return NextResponse.json(users.map(s => ({
     id: s.id, name: s.name, email: s.email,
-    section: s.studentProfile?.section,
+    section: s.studentProfile?.section ?? s.role,
     course: s.studentProfile?.dvlCourse,
+    role: s.role,
   })))
 }

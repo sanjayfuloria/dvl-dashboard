@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { phaseLabel, phaseColor, healthColor, healthLabel, formatDate } from '@/lib/utils'
 import { Briefcase, Plus } from 'lucide-react'
+import { RenameTeamButton } from '@/components/teams/RenameTeamButton'
 import Link from 'next/link'
 import { CreateTeamButton } from '@/components/admin/CreateTeamButton'
 import { DeleteTeamButton } from '@/components/admin/DeleteTeamButton'
@@ -65,6 +66,7 @@ export default async function AdminTeamsPage() {
                       <p className="font-medium">{team.ventureName ?? team.name}</p>
                       <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{team.name}</p>
                     </Link>
+                    <RenameTeamButton teamId={team.id} currentName={team.name} />
                   </td>
                   <td><span className="tag-gray tag">{team.course}</span></td>
                   <td>

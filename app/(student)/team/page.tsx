@@ -31,6 +31,9 @@ export default function Page() {
   const [loading,setLoading]       = useState(true)
   const [saving,setSaving]         = useState(false)
   const [toast,setToast]           = useState<{msg:string;type:'ok'|'err'}|null>(null)
+  const [renaming,setRenaming]     = useState<string|null>(null)  // course being renamed
+  const [renameName,setRenameName] = useState('')
+  const [renameSaving,setRenameSaving] = useState(false)
 
   const showToast = (msg:string,type:'ok'|'err'='ok') => {
     setToast({msg,type}); setTimeout(()=>setToast(null),4000)
@@ -51,6 +54,25 @@ export default function Page() {
   }
 
   useEffect(()=>{ load() },[scope])
+
+  async function renameTeam(teamId: string, course: string) {
+    if (!renameName.trim()) return
+    setRenameSaving(true)
+    const res = await fetch(`/dvl/api/teams/${teamId}/rename`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: renameName.trim() })
+    })
+    const d = await res.json()
+    setRenameSaving(false)
+    if (res.ok) {
+      showToast('Team name updated!', 'ok')
+      setRenaming(null); setRenameName('')
+      await load(course)
+    } else {
+      showToast(d.error ?? 'Failed to rename', 'err')
+    }
+  }
 
   async function act(action:string, course:string, teamId?:string, teamName?:string) {
     setSaving(true)
@@ -194,10 +216,34 @@ export default function Page() {
                     {myTeam.isIndividual
                       ? <User className="w-6 h-6 shrink-0" style={{color:'#2563EB'}}/>
                       : <Users className="w-6 h-6 shrink-0" style={{color:'#16A34A'}}/>}
-                    <div>
-                      <p className="font-semibold" style={{color:myTeam.isIndividual?'#1E3A8A':'#14532D'}}>
-                        {myTeam.isIndividual ? 'Individual project (1 member)' : myTeam.name}
-                      </p>
+                    <div className="flex-1 min-w-0">
+                      {renaming === slot.course ? (
+                        <div className="flex gap-2 items-center">
+                          <input className="flex-1 px-2 py-1 rounded border text-sm focus:outline-none"
+                            style={{borderColor:'#5B4BD4'}}
+                            value={renameName} onChange={e=>setRenameName(e.target.value)}
+                            onKeyDown={e=>e.key==='Enter'&&renameTeam(myTeam.id,slot.course)}
+                            autoFocus placeholder="New team name…"/>
+                          <button onClick={()=>renameTeam(myTeam.id,slot.course)} disabled={renameSaving}
+                            className="text-xs px-2 py-1 rounded font-medium text-white disabled:opacity-40"
+                            style={{background:'#5B4BD4'}}>
+                            {renameSaving?'…':'Save'}
+                          </button>
+                          <button onClick={()=>{setRenaming(null);setRenameName('')}}
+                            className="text-xs px-2 py-1 rounded" style={{color:'#6B7280'}}>✕</button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold" style={{color:myTeam.isIndividual?'#1E3A8A':'#14532D'}}>
+                            {myTeam.isIndividual ? 'Individual project (1 member)' : myTeam.name}
+                          </p>
+                          {(myTeam.role === 'Team Lead' || myTeam.role === 'Individual') && (
+                            <button onClick={()=>{setRenaming(slot.course);setRenameName(myTeam.name)}}
+                              className="text-xs px-1.5 py-0.5 rounded"
+                              style={{color:'#6B7280',border:'1px solid #E5E7EB'}}>✏</button>
+                          )}
+                        </div>
+                      )}
                       <p className="text-xs mt-0.5" style={{color:'#6B7280'}}>
                         {myTeam.isIndividual
                           ? 'Working independently — only you, no one can join'
