@@ -35,6 +35,7 @@ export async function GET(req: NextRequest) {
       isIndividual: tm.role === 'Individual',
       course: t.course, memberCount: t.members.length,
       teamMemberId: tm.id, role: tm.role,
+      driveFolderId: t.driveFolderId,
     }
   }
 

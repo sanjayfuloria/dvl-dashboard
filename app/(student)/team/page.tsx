@@ -4,7 +4,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { Users, User, Plus, LogIn, LogOut, Search, Info, AlertCircle, CheckCircle2, AlertTriangle } from 'lucide-react'
 
 type Slot = { section: string; course: string }
-type TeamInfo = { id: string; name: string; isIndividual: boolean; course: string; memberCount: number; role: string }
+type TeamInfo = { id: string; name: string; isIndividual: boolean; course: string; memberCount: number; role: string; driveFolderId?: string|null }
 type OT = { id: string; name: string; course: string; sector: string|null; ventureName: string|null; memberCount: number; members:(string|null)[] }
 
 const COURSE_LABELS: Record<string,string> = {
@@ -249,6 +249,22 @@ export default function Page() {
                           ? 'Working independently — only you, no one can join'
                           : `${myTeam.memberCount} of 5 members · ${myTeam.role} · Others can still join until full`}
                       </p>
+                      {myTeam.driveFolderId && (
+                        <a href={`https://drive.google.com/drive/folders/${myTeam.driveFolderId}`}
+                          target="_blank" rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 mt-1.5 text-xs font-medium px-2.5 py-1 rounded-full"
+                          style={{background:'#E8F5E9',color:'#1B5E20',border:'1px solid #A5D6A7',textDecoration:'none'}}>
+                          <svg width="12" height="12" viewBox="0 0 87.3 78" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3L28.2 48.95 6.6 48.95c0 1.55.4 3.1 1.2 4.5L6.6 66.85z" fill="#0066DA"/>
+                            <path d="M43.65 25L29.2 0c-1.35.8-2.5 1.9-3.3 3.3L1.2 44.45C.4 45.85 0 47.4 0 48.95h21.6L43.65 25z" fill="#00AC47"/>
+                            <path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H65.7L73.55 76.8z" fill="#EA4335"/>
+                            <path d="M43.65 25L58.1 0c-1.55 0-3.1.4-4.5 1.2L1.2 44.45c-1.4.8-2.5 1.95-3.3 3.3... " fill="#00832D"/>
+                            <path d="M65.7 48.95H21.6l-7.85 27.85c1.4.8 2.95 1.2 4.5 1.2h50.8c1.55 0 3.1-.4 4.5-1.2L65.7 48.95z" fill="#2684FC"/>
+                            <path d="M73.4 25.45L58.95 1.2C57.55.4 56 0 54.45 0H43.65L65.7 48.95h21.6c0-1.55-.4-3.1-1.2-4.5L73.4 25.45z" fill="#FFBA00"/>
+                          </svg>
+                          Open Team Drive Folder
+                        </a>
+                      )}
                     </div>
                   </div>
                   <button onClick={()=>act('leave',slot.course)} disabled={saving}

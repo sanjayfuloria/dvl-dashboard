@@ -22,32 +22,81 @@ export function RenameTeamButton({ teamId, currentName }: { teamId: string; curr
   }
 
   if (!editing) return (
-    <button onClick={() => { setName(currentName); setEditing(true) }}
-      className="text-xs px-1.5 py-0.5 rounded ml-1"
-      style={{ color: 'var(--text-muted)', border: '1px solid var(--border-default)' }}
-      title="Rename team">✏
+    <button
+      onClick={() => { setName(currentName); setEditing(true) }}
+      title="Rename this team"
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+        marginTop: 4,
+        padding: '3px 10px',
+        borderRadius: 20,
+        fontSize: 11,
+        fontWeight: 600,
+        cursor: 'pointer',
+        background: '#EDE9FF',
+        color: '#5B4BD4',
+        border: '1px solid #c4b5fd',
+        letterSpacing: 0.2,
+      }}>
+      ✏ Rename
     </button>
   )
 
   return (
-    <div className="flex flex-col gap-1 mt-1">
-      <div className="flex items-center gap-1">
-        <input className="px-2 py-1 rounded border text-sm focus:outline-none"
-          style={{ borderColor: 'var(--dvl-purple)', width: 160 }}
-          value={name} onChange={e => setName(e.target.value)}
-          onKeyDown={e => { if (e.key==='Enter') save(); if (e.key==='Escape') setEditing(false) }}
-          autoFocus/>
-        <button onClick={save} disabled={saving}
-          className="text-xs px-2 py-1 rounded text-white disabled:opacity-40"
-          style={{ background: 'var(--dvl-purple)' }}>
+    <div style={{ marginTop: 6 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <input
+          style={{
+            padding: '5px 10px',
+            borderRadius: 8,
+            border: '2px solid #5B4BD4',
+            fontSize: 13,
+            outline: 'none',
+            width: 180,
+            fontWeight: 500,
+          }}
+          value={name}
+          onChange={e => setName(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEditing(false) }}
+          autoFocus
+          placeholder="New team name…"
+        />
+        <button
+          onClick={save}
+          disabled={saving}
+          style={{
+            padding: '5px 14px',
+            borderRadius: 8,
+            border: 'none',
+            background: '#5B4BD4',
+            color: 'white',
+            fontSize: 12,
+            fontWeight: 700,
+            cursor: 'pointer',
+            opacity: saving ? 0.6 : 1,
+          }}>
           {saving ? '…' : 'Save'}
         </button>
-        <button onClick={() => setEditing(false)}
-          className="text-xs px-2 py-1 rounded"
-          style={{ border: '1px solid var(--border-default)', color: 'var(--text-muted)' }}>✕
+        <button
+          onClick={() => { setEditing(false); setError('') }}
+          style={{
+            padding: '5px 10px',
+            borderRadius: 8,
+            border: '1px solid #e5e7eb',
+            background: 'white',
+            color: '#6b7280',
+            fontSize: 12,
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}>
+          Cancel
         </button>
       </div>
-      {error && <p className="text-xs" style={{ color: '#DC2626' }}>{error}</p>}
+      {error && (
+        <p style={{ fontSize: 11, color: '#DC2626', marginTop: 4 }}>⚠ {error}</p>
+      )}
     </div>
   )
 }
