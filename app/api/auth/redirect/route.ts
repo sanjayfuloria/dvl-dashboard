@@ -1,16 +1,18 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/session'
+import { getBaseUrl } from '@/lib/site-url'
 
 export async function GET() {
   const user = await getSession()
+  const BASE = getBaseUrl()
   if (!user) {
-    return NextResponse.redirect('https://www.sanjayfuloria.tech/dvl/login')
+    return NextResponse.redirect(`${BASE}/login`)
   }
   const redirects: Record<string, string> = {
-    ADMIN: 'https://www.sanjayfuloria.tech/dvl/admin/dashboard',
-    FACULTY: 'https://www.sanjayfuloria.tech/dvl/faculty/dashboard',
-    MENTOR: 'https://www.sanjayfuloria.tech/dvl/mentor/dashboard',
-    STUDENT: 'https://www.sanjayfuloria.tech/dvl/dashboard',
+    ADMIN: `${BASE}/admin/dashboard`,
+    FACULTY: `${BASE}/faculty/dashboard`,
+    MENTOR: `${BASE}/mentor/dashboard`,
+    STUDENT: `${BASE}/dashboard`,
   }
-  return NextResponse.redirect(redirects[user.role] ?? 'https://www.sanjayfuloria.tech/dvl/dashboard')
+  return NextResponse.redirect(redirects[user.role] ?? `${BASE}/dashboard`)
 }

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Copy, Plus, Loader2, ExternalLink } from 'lucide-react'
+import { getBaseUrl } from '@/lib/site-url'
 
 type Team={id:string;name:string;ventureName:string|null;course:string;currentPhase:string;progressPct:number;members:{student:{user:{name:string|null}}}[];shortlist?:{status:string;notes:string|null;rank:number|null}|null;facultyGuide?:{user:{name:string|null}}|null}
 type Jury={id:string;name:string;email:string;organisation:string|null;designation:string|null;round:string;token:string}
@@ -359,7 +360,7 @@ export default function DemoDayPage(){
                     <thead><tr><th>Name</th><th>Organisation</th><th>Round</th><th>Scoring Link</th><th></th></tr></thead>
                     <tbody>
                       {(demoDay.jury||[]).map(j=>{
-                        const url='https://www.sanjayfuloria.tech/dvl/jury/'+j.token
+                        const url=getBaseUrl()+'/jury/'+j.token
                         return(
                           <tr key={j.id}>
                             <td>

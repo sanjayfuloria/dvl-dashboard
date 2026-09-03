@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import { getBaseUrl } from '@/lib/site-url'
 import {
   Zap, LayoutDashboard, Rocket, CheckSquare, Bot,
   Users, ClipboardList, BarChart3, Settings, LogOut, ChevronRight,
@@ -135,7 +136,7 @@ export function Sidebar({ role, userName, userEmail }: SidebarProps) {
             <p className="text-white text-[12px] font-medium truncate">{userName ?? 'User'}</p>
             <p className="text-[10px] truncate" style={{ color: 'rgba(255,255,255,0.35)' }}>{userEmail}</p>
           </div>
-          <button onClick={() => fetch('/dvl/api/logout', { method: 'POST' }).then(() => window.location.href = 'https://www.sanjayfuloria.tech/dvl/login')}
+          <button onClick={() => fetch('/dvl/api/logout', { method: 'POST' }).then(() => window.location.href = `${getBaseUrl()}/login`)}
             title="Sign out" className="p-1.5 rounded-md" style={{ color: 'rgba(255,255,255,0.35)' }}>
             <LogOut className="w-3.5 h-3.5" />
           </button>

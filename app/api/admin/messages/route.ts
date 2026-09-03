@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { sendMail } from '@/lib/mailer'
+import { getBaseUrl } from '@/lib/site-url'
 
 const CC_EMAIL = 'sanjay.fuloria@ibsindia.org'
 
 function buildHtml(name: string, subject: string, body: string) {
   const firstName = name.split(' ')[0].charAt(0).toUpperCase() + name.split(' ')[0].slice(1).toLowerCase()
-  return `<!DOCTYPE html><html><head><meta charset="UTF-8"/><style>body{font-family:Arial,sans-serif;background:#f3f4f6;margin:0;padding:0}.wrap{max-width:600px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08)}.header{background:linear-gradient(135deg,#3b2ba0,#5B4BD4);padding:28px 36px 20px}.header p{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#c4b5fd;margin:0 0 6px}.header h1{font-size:20px;font-weight:800;color:#fff;margin:0}.body{padding:32px 36px}p{font-size:14px;line-height:1.8;color:#374151;margin:0 0 14px}.footer{background:#1f2937;padding:20px 36px;text-align:center}.footer p{color:#9ca3af;font-size:12px;margin:3px 0}</style></head><body><div class="wrap"><div class="header"><p>IFHE · Digital Venture Lab · AY 2026-27</p><h1>${subject}</h1></div><div class="body"><p>Dear ${firstName},</p><p>${body.replace(/\n/g,'<br/>')}</p><p>Best wishes,<br/><strong>Prof. Sanjay Fuloria</strong><br/>Director, CDOE · IFHE Hyderabad</p></div><div class="footer"><p>DVL Dashboard · IFHE Hyderabad · AY 2026-27</p><p>https://www.sanjayfuloria.tech/dvl</p></div></div></body></html>`
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"/><style>body{font-family:Arial,sans-serif;background:#f3f4f6;margin:0;padding:0}.wrap{max-width:600px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08)}.header{background:linear-gradient(135deg,#3b2ba0,#5B4BD4);padding:28px 36px 20px}.header p{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#c4b5fd;margin:0 0 6px}.header h1{font-size:20px;font-weight:800;color:#fff;margin:0}.body{padding:32px 36px}p{font-size:14px;line-height:1.8;color:#374151;margin:0 0 14px}.footer{background:#1f2937;padding:20px 36px;text-align:center}.footer p{color:#9ca3af;font-size:12px;margin:3px 0}</style></head><body><div class="wrap"><div class="header"><p>IFHE · Digital Venture Lab · AY 2026-27</p><h1>${subject}</h1></div><div class="body"><p>Dear ${firstName},</p><p>${body.replace(/\n/g,'<br/>')}</p><p>Best wishes,<br/><strong>Prof. Sanjay Fuloria</strong><br/>Director, CDOE · IFHE Hyderabad</p></div><div class="footer"><p>DVL Dashboard · IFHE Hyderabad · AY 2026-27</p><p>${getBaseUrl()}</p></div></div></body></html>`
 }
 
 async function sendViaMailjet(to: string, name: string, subject: string, html: string) {

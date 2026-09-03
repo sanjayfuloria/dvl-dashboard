@@ -1,15 +1,16 @@
 import { getSession } from '@/lib/session'
 import { redirect } from 'next/navigation'
+import { getBaseUrl } from '@/lib/site-url'
 
 export default async function RootPage() {
   const user = await getSession()
-  if (!user) redirect('https://www.sanjayfuloria.tech/dvl/login')
+  if (!user) redirect(`${getBaseUrl()}/login`)
 
   const redirects: Record<string, string> = {
-    ADMIN: '/dvl/admin/dashboard',
-    FACULTY: '/dvl/faculty/dashboard',
-    MENTOR: '/dvl/mentor/dashboard',
-    STUDENT: '/dvl/dashboard',
+    ADMIN: '/admin/dashboard',
+    FACULTY: '/faculty/dashboard',
+    MENTOR: '/mentor/dashboard',
+    STUDENT: '/dashboard',
   }
-  redirect('https://www.sanjayfuloria.tech' + (redirects[user.role] ?? '/dvl/dashboard'))
+  redirect(getBaseUrl() + (redirects[user.role] ?? '/dashboard'))
 }

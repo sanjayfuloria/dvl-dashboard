@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendMail } from '@/lib/mailer'
 import { SignJWT } from 'jose'
+import { getBaseUrl } from '@/lib/site-url'
 
 const MJ_KEY     = process.env.MAILJET_API_KEY!
 const MJ_SECRET  = process.env.MAILJET_SECRET_KEY!
 const RESEND_KEY = process.env.RESEND_API_KEY!
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET!)
-const BASE_URL   = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://sanjayfuloria.tech/dvl'
+const BASE_URL   = getBaseUrl()
 
 function buildHtml(name: string, resetUrl: string) {
   const firstName = name.split(' ')[0].charAt(0).toUpperCase() + name.split(' ')[0].slice(1).toLowerCase()

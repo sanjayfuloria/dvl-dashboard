@@ -71,7 +71,11 @@ export default function Page(){
     if(editForm.secondary.trim()){
       secondarySections=editForm.secondary.split(',').map(s=>{
         const sec=s.trim().toUpperCase()
-        const course=sec.startsWith('MDT')?'MDT':sec.startsWith('MPB')?'MPB':sec.startsWith('B2B')?'B2B':''
+        // 'B2B' is intentionally not mapped here — it isn't a valid value
+        // in the database's Course enum (only MDT/MPB exist), so treating
+        // it as a real course would crash any query that filters by it.
+        // Not offered anywhere in the programme this semester anyway.
+        const course=sec.startsWith('MDT')?'MDT':sec.startsWith('MPB')?'MPB':''
         return{section:sec,course}
       }).filter(s=>s.course)
     }
@@ -187,14 +191,17 @@ export default function Page(){
               <label style={{fontSize:12,fontWeight:600,display:'block',marginBottom:6}}>Primary Section</label>
               <select value={editForm.section} onChange={e=>{
                 const sec=e.target.value
-                const course=sec.startsWith('MDT')?'MDT':sec.startsWith('MPB')?'MPB':sec.startsWith('B2B')?'B2B':''
+                const course=sec.startsWith('MDT')?'MDT':sec.startsWith('MPB')?'MPB':''
                 setEditForm(f=>({...f,section:sec,dvlCourse:course}))
               }} style={{width:'100%',padding:'8px 12px',borderRadius:8,border:'1px solid #e5e7eb',fontSize:14,boxSizing:'border-box' as any}}>
                 <option value="">— select section —</option>
                 <option value="MDT-A">MDT-A — Managing Digital Transformation</option>
                 <option value="MPB-A">MPB-A — Marketing for Platform Businesses</option>
                 <option value="MPB-B">MPB-B — Marketing for Platform Businesses</option>
-                <option value="B2B-B">B2B-B — Business-to-Business Marketing</option>
+                {/* B2B-B removed: not offered this semester, and the database's
+                    Course enum has no matching value for it — selecting it
+                    would crash any team query filtered by course. Add it back
+                    alongside a proper Prisma migration if it's ever offered. */}
               </select>
             </div>
 
@@ -205,10 +212,10 @@ export default function Page(){
 
             <div style={{marginBottom:20}}>
               <label style={{fontSize:12,fontWeight:600,display:'block',marginBottom:4}}>
-                Additional Sections <span style={{fontWeight:400,color:'#9ca3af'}}>(comma-separated, e.g. MPB-A, B2B-B)</span>
+                Additional Sections <span style={{fontWeight:400,color:'#9ca3af'}}>(comma-separated, e.g. MDT-A, MPB-A)</span>
               </label>
               <input value={editForm.secondary} onChange={e=>setEditForm(f=>({...f,secondary:e.target.value}))}
-                placeholder="e.g. MPB-A  or  MPB-A, B2B-B"
+                placeholder="e.g. MPB-A  or  MDT-A, MPB-A"
                 style={{width:'100%',padding:'8px 12px',borderRadius:8,border:'1px solid #e5e7eb',fontSize:14,boxSizing:'border-box' as any}}/>
               <p style={{fontSize:11,color:'#9ca3af',marginTop:4}}>Leave blank if student is in one section only.</p>
             </div>

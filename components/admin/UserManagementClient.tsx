@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { formatDate } from '@/lib/utils'
 import { Search, Plus, Loader2, X, Eye, EyeOff, RefreshCw, Copy, Check } from 'lucide-react'
+import { getBaseUrl } from '@/lib/site-url'
 
 interface User {
   id: string
@@ -242,7 +243,7 @@ export function UserManagementClient({ users }: Props) {
                     <div style={{ marginBottom: 12 }}>
                       <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Login URL</p>
                       <p style={{ fontSize: 13, fontFamily: 'monospace', wordBreak: 'break-all' }}>
-                        https://www.sanjayfuloria.tech/dvl/login
+                        {getBaseUrl()}/login
                       </p>
                     </div>
                     <div style={{ marginBottom: 12 }}>
@@ -256,7 +257,7 @@ export function UserManagementClient({ users }: Props) {
                           {success.password}
                         </p>
                         <button
-                          onClick={() => copyToClipboard(`Login: https://www.sanjayfuloria.tech/dvl/login\nEmail: ${success!.email}\nPassword: ${success!.password}`)}
+                          onClick={() => copyToClipboard(`Login: ${getBaseUrl()}/login\nEmail: ${success!.email}\nPassword: ${success!.password}`)}
                           className="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1"
                         >
                           {copied ? <><Check className="w-3 h-3" /> Copied!</> : <><Copy className="w-3 h-3" /> Copy all</>}

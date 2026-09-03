@@ -3,6 +3,7 @@ import { getSession } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { Resend } from 'resend'
 import bcrypt from 'bcryptjs'
+import { getBaseUrl } from '@/lib/site-url'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -111,13 +112,13 @@ export async function POST(req: NextRequest) {
             </p>
             <div style="background:#f5f4f0;border-radius:12px;padding:24px;margin-bottom:24px;">
               <p style="margin:0 0 4px;font-size:11px;color:#999;text-transform:uppercase;letter-spacing:0.05em;font-weight:600;">Login URL</p>
-              <p style="margin:0 0 16px;"><a href="https://www.sanjayfuloria.tech/dvl/login" style="color:#7c6af7;">https://www.sanjayfuloria.tech/dvl/login</a></p>
+              <p style="margin:0 0 16px;"><a href="${getBaseUrl()}/login" style="color:#7c6af7;">${getBaseUrl()}/login</a></p>
               <p style="margin:0 0 4px;font-size:11px;color:#999;text-transform:uppercase;letter-spacing:0.05em;font-weight:600;">Email</p>
               <p style="margin:0 0 16px;font-size:14px;font-family:monospace;">${email}</p>
               <p style="margin:0 0 4px;font-size:11px;color:#999;text-transform:uppercase;letter-spacing:0.05em;font-weight:600;">Password</p>
               <p style="margin:0;font-size:18px;font-family:monospace;font-weight:700;color:#7c6af7;letter-spacing:2px;">${password}</p>
             </div>
-            <a href="https://www.sanjayfuloria.tech/dvl/login"
+            <a href="${getBaseUrl()}/login"
                style="display:inline-block;background:#7c6af7;color:#fff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:15px;font-weight:600;">
               Sign in to DVL Dashboard →
             </a>

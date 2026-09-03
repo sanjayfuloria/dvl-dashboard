@@ -3,6 +3,7 @@ import { getSession } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { Resend } from 'resend'
 import { z } from 'zod'
+import { getBaseUrl } from '@/lib/site-url'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -70,7 +71,7 @@ export async function PATCH(req: NextRequest) {
             </p>
           </div>
           ` : ''}
-          <a href="https://www.sanjayfuloria.tech/dvl/login"
+          <a href="${getBaseUrl()}/login"
              style="display:inline-block;background:#7c6af7;color:white;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;margin-top:8px;">
             Sign in to DVL Dashboard
           </a>
