@@ -9,8 +9,15 @@ export async function middleware(req: NextRequest) {
   if (PUBLIC.some((r) => pathname.startsWith(r))) return NextResponse.next()
 
   const token = req.cookies.get('dvl_session')?.value
+  // Built from the current request's own origin, not a hardcoded domain —
+  // a hardcoded 'https://www.sanjayfuloria.tech/...' here previously sent
+  // people back to a *different* host than the one their session cookie
+  // was scoped to, which silently broke every login.
+  const loginUrl = req.nextUrl.clone()
+  loginUrl.pathname = '/login'
+
   if (!token) {
-    return NextResponse.redirect(new URL('https://www.sanjayfuloria.tech/dvl/login'))
+    return NextResponse.redirect(loginUrl)
   }
 
   try {
@@ -18,7 +25,7 @@ export async function middleware(req: NextRequest) {
     await jose.jwtVerify(token, secret)
     return NextResponse.next()
   } catch {
-    return NextResponse.redirect(new URL('https://www.sanjayfuloria.tech/dvl/login'))
+    return NextResponse.redirect(loginUrl)
   }
 }
 

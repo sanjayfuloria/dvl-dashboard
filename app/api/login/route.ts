@@ -63,6 +63,14 @@ export async function POST(req: NextRequest) {
       sameSite: 'lax',
       maxAge: 30 * 24 * 60 * 60,
       path: '/',
+      // Without an explicit domain, this cookie is host-only — scoped to
+      // whichever exact host (sanjayfuloria.tech vs www.sanjayfuloria.tech)
+      // issued it. If the redirect destination below ever lands on a
+      // different host than the one the browser is currently on, the
+      // cookie silently doesn't get sent and middleware.ts bounces the
+      // person straight back to login with no visible error. The leading
+      // dot makes it valid on the bare domain AND any subdomain.
+      domain: '.sanjayfuloria.tech',
     })
 
     return response
