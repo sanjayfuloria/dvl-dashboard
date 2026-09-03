@@ -4,6 +4,8 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { formatDate, phaseLabel, phaseColor, statusColor } from '@/lib/utils'
 import { CheckSquare, CheckCircle2, Circle, Clock, FileText } from 'lucide-react'
 import { FileUpload } from '@/components/shared/FileUpload'
+import { courseSlots, pickActiveMembership } from '@/lib/team-select'
+import { CourseTabs } from '@/components/student/CourseTabs'
 
 export const metadata = { title: 'Milestones' }
 
@@ -15,7 +17,7 @@ const PHASE_DELIVERABLES: Record<string, string[]> = {
   MVP: ['MVP Demonstration', 'Pitch Deck', 'Final Report', 'Growth Roadmap'],
 }
 
-async function getTeamMilestones(userId: string) {
+async function getTeamMemberships(userId: string) {
   const student = await prisma.studentProfile.findUnique({
     where: { userId },
     include: {
@@ -29,17 +31,26 @@ async function getTeamMilestones(userId: string) {
             },
           },
         },
-        take: 1,
+        // A student can hold a separate team membership per DVL course —
+        // fetch all of them, not just the first.
       },
     },
   })
-  return student?.teamMembers?.[0]?.team ?? null
+  return student?.teamMembers ?? []
 }
 
-export default async function MilestonesPage() {
+export default async function MilestonesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ course?: string }>
+}) {
   const session = await getSession()
   if (!session?.id) return null
-  const team = await getTeamMilestones(session.id)
+  const { course: requestedCourse } = await searchParams
+  const memberships = await getTeamMemberships(session.id)
+  const courses = courseSlots(memberships)
+  const team = pickActiveMembership(memberships, requestedCourse)?.team ?? null
+  const activeCourse = team?.course ?? requestedCourse ?? courses[0] ?? ''
 
   return (
     <div className="page-enter">
@@ -48,6 +59,7 @@ export default async function MilestonesPage() {
         subtitle="Track your DVL journey and upload your deliverables"
       />
       <div className="page-body space-y-8">
+        <CourseTabs courses={courses} active={activeCourse} basePath="/milestones" />
         {!team ? (
           <div className="card text-center py-20">
             <CheckSquare className="w-10 h-10 mx-auto mb-4 opacity-20" />

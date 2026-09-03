@@ -1,8 +1,12 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 
-export async function GET() {
+// Returns ALL of the student's teams (one per DVL course they're enrolled
+// in), not just the first. Pass ?course=MDT to also get `team` set to that
+// specific one; otherwise `team` defaults to the first membership, kept for
+// callers that haven't been updated to the multi-team shape yet.
+export async function GET(req: NextRequest) {
   const session = await getSession()
   if (!session?.id) return NextResponse.json(null, { status: 401 })
 
@@ -19,11 +23,13 @@ export async function GET() {
             },
           },
         },
-        take: 1,
       },
     },
   })
 
-  const team = student?.teamMembers?.[0]?.team ?? null
-  return NextResponse.json(team)
+  const teams = (student?.teamMembers ?? []).map((tm) => tm.team)
+  const requestedCourse = req.nextUrl.searchParams.get('course')
+  const team = (requestedCourse ? teams.find((t) => t.course === requestedCourse) : null) ?? teams[0] ?? null
+
+  return NextResponse.json({ team, teams })
 }

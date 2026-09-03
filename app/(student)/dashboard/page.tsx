@@ -7,6 +7,8 @@ import {
   Users, AlertCircle, Clock, ChevronRight, Zap
 } from 'lucide-react'
 import Link from 'next/link'
+import { courseSlots, pickActiveMembership } from '@/lib/team-select'
+import { CourseTabs } from '@/components/student/CourseTabs'
 
 export const metadata = { title: 'Dashboard' }
 
@@ -28,19 +30,29 @@ async function getStudentData(userId: string) {
             },
           },
         },
-        take: 1,
+        // Fetch every team membership — a student can be on a separate
+        // team per DVL course (e.g. MDT-A and MPB-B at once).
       },
     },
   })
   return student
 }
 
-export default async function StudentDashboard() {
+export default async function StudentDashboard({
+  searchParams,
+}: {
+  searchParams: Promise<{ course?: string }>
+}) {
   const session = await getSession()
   if (!session?.id) return null
 
+  const { course: requestedCourse } = await searchParams
   const student = await getStudentData(session.id)
-  const team = student?.teamMembers?.[0]?.team
+  const memberships = student?.teamMembers ?? []
+  const courses = courseSlots(memberships)
+  const activeMembership = pickActiveMembership(memberships, requestedCourse)
+  const team = activeMembership?.team
+  const activeCourse = team?.course ?? requestedCourse ?? courses[0] ?? ''
 
   const upcomingMilestones = team?.milestones.filter(
     (m) => m.status !== 'APPROVED' && m.dueDate && new Date(m.dueDate) >= new Date()
@@ -57,6 +69,7 @@ export default async function StudentDashboard() {
       />
 
       <div className="page-body space-y-6">
+        <CourseTabs courses={courses} active={activeCourse} basePath="/dashboard" />
         {team ? (
           <>
             {/* Venture summary card */}
@@ -267,7 +280,7 @@ export default async function StudentDashboard() {
                       { href: '/reflections', label: 'Monthly reflection', icon: TrendingUp },
                       { href: '/portfolio', label: 'View portfolio', icon: Star },
                     ].map((action) => (
-                      <Link key={action.href} href={action.href}
+                      <Link key={action.href} href={courses.length > 1 ? `${action.href}?course=${activeCourse}` : action.href}
                             className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm transition-colors hover:bg-gray-50"
                             style={{ color: 'var(--text-secondary)' }}>
                         <action.icon className="w-4 h-4" />

@@ -17,17 +17,24 @@ async function getAccessToken(): Promise<string> {
   return token.token!
 }
 
-export async function createTeamDriveFolder(teamName: string, ventureName: string): Promise<string | null> {
+export async function createTeamDriveFolder(teamName: string, ventureName: string, course?: string): Promise<string | null> {
   try {
     const token = await getAccessToken()
     const rootFolderId = process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID!
+
+    // Folder name carries the course tag (e.g. "[MDT]") so faculty browsing
+    // Drive directly — without the dashboard — can tell at a glance which
+    // course a team's submissions belong to. This matters because a
+    // student can run two separate teams under the same or similar name
+    // across MDT and MPB.
+    const courseTag = course ? ` [${course}]` : ''
 
     // Create main team folder
     const res = await fetch('https://www.googleapis.com/drive/v3/files', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        name: `${teamName} — ${ventureName || teamName}`,
+        name: `${teamName}${courseTag} — ${ventureName || teamName}`,
         mimeType: 'application/vnd.google-apps.folder',
         parents: [rootFolderId],
       }),

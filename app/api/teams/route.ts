@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
   // Create Google Drive folder
   let driveFolderId: string | null = null
   if (process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID) {
-    driveFolderId = await createTeamDriveFolder(teamData.name, teamData.ventureName ?? teamData.name)
+    driveFolderId = await createTeamDriveFolder(teamData.name, teamData.ventureName ?? teamData.name, teamData.course)
   }
 
   const team = await prisma.team.create({

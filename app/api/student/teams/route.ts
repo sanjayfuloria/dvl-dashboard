@@ -107,10 +107,17 @@ export async function POST(req: NextRequest) {
     if (!teamName?.trim()) return NextResponse.json({ error: 'Project name required' }, { status: 400 })
     const exists = await prisma.team.findFirst({ where: { name: teamName.trim() } })
     if (exists) return NextResponse.json({ error: 'That name is already taken. Please choose another.' }, { status: 400 })
+    // Individual (1-person) projects need their own Drive folder too —
+    // this was previously only created for group teams, which meant a
+    // student's individual-project course had nowhere for uploads to land.
+    let driveFolderId: string | null = null
+    if (process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID)
+      driveFolderId = await createTeamDriveFolder(teamName.trim(), teamName.trim(), targetCourse)
     const t = await prisma.team.create({
       data: {
         name: teamName.trim(),
         course: targetCourse as any,
+        driveFolderId,
         members: { create: { studentProfileId: sp.id, role: 'Individual' } }
       }
     })
@@ -135,7 +142,7 @@ export async function POST(req: NextRequest) {
     if (exists) return NextResponse.json({ error: 'Team name already taken. Please choose another.' }, { status: 400 })
     let driveFolderId: string | null = null
     if (process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID)
-      driveFolderId = await createTeamDriveFolder(teamName.trim(), teamName.trim())
+      driveFolderId = await createTeamDriveFolder(teamName.trim(), teamName.trim(), targetCourse)
     const t = await prisma.team.create({
       data: {
         name: teamName.trim(), course: targetCourse as any,

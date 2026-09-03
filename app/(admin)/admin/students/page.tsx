@@ -4,8 +4,11 @@ import { createPortal } from 'react-dom'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Users, Search, UserX } from 'lucide-react'
 
-type S={id:string;userId:string;name:string|null;email:string;enrollNo:string|null;section:string|null;dvlCourse:string|null;team:{id:string;name:string;course:string}|null;teamRole:string|null}
+type STeam={teamMemberId:string;role:string|null;id:string;name:string;course:string}
+type S={id:string;userId:string;name:string|null;email:string;enrollNo:string|null;section:string|null;dvlCourse:string|null;teams:STeam[]}
 type T={id:string;name:string;course:string}
+
+const courseColor:Record<string,string>={MDT:'bg-purple-100 text-purple-700',MPB:'bg-teal-100 text-teal-700',B2B:'bg-amber-100 text-amber-700'}
 
 const sc:Record<string,string>={
   'MDT-A':'bg-purple-100 text-purple-700',
@@ -48,12 +51,16 @@ export default function Page(){
 
   async function assign(studentId:string,teamId:string){
     setSaving(studentId)
-    await fetch('/dvl/api/admin/students/assign',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({studentId,teamId})})
-    setSaving(null);setAssigning(null);showToast('Student assigned');load()
+    const res=await fetch('/dvl/api/admin/students/assign',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({studentId,teamId})})
+    setSaving(null);setAssigning(null)
+    showToast(res.ok?'Student assigned':'Could not assign — please try again')
+    load()
   }
-  async function remove(studentId:string){
+  // teamId scopes removal to one specific course's team, so removing a
+  // student from e.g. their MDT team leaves their MPB team untouched.
+  async function remove(studentId:string,teamId:string){
     setSaving(studentId)
-    await fetch('/dvl/api/admin/students/assign',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({studentId})})
+    await fetch('/dvl/api/admin/students/assign',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({studentId,teamId})})
     setSaving(null);showToast('Student removed from team');load()
   }
 
@@ -117,8 +124,20 @@ export default function Page(){
                         :'—'}
                     </td>
                     <td>
-                      {s.team
-                        ?<div><p className="text-sm font-medium">{s.team.name}</p><p className="text-xs text-gray-400">{s.team.course} · {s.teamRole}</p></div>
+                      {s.teams.length>0
+                        ?<div className="space-y-1">
+                            {s.teams.map(t=>(
+                              <div key={t.teamMemberId} className="flex items-center gap-1.5">
+                                <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold ${courseColor[t.course]??'bg-gray-100 text-gray-700'}`}>{t.course}</span>
+                                <span className="text-sm font-medium">{t.name}</span>
+                                <span className="text-xs text-gray-400">· {t.role}</span>
+                                <button disabled={saving===s.id} onClick={()=>remove(s.id,t.id)} title={`Remove from ${t.course} team`}
+                                  className="text-gray-300 hover:text-red-500 disabled:opacity-40">
+                                  <UserX className="w-3 h-3"/>
+                                </button>
+                              </div>
+                            ))}
+                          </div>
                         :<span className="text-xs text-gray-400">No team</span>}
                     </td>
                     <td>
@@ -128,7 +147,9 @@ export default function Page(){
                           className="text-xs px-2 py-1 rounded border border-gray-200 text-gray-600 hover:bg-gray-50">
                           ✏ Edit
                         </button>
-                        {/* Assign/reassign team */}
+                        {/* Add/reassign a team — picking a team replaces only that
+                            course's existing membership, so a student's other
+                            course team (if any) is left untouched. */}
                         {assigning===s.id?(
                           <div className="flex items-center gap-1">
                             <select className="text-xs px-2 py-1 rounded border border-gray-200" value={selTeam[s.id]??''} onChange={e=>setSelTeam(p=>({...p,[s.id]:e.target.value}))}>
@@ -140,12 +161,7 @@ export default function Page(){
                           </div>
                         ):(
                           <button onClick={()=>setAssigning(s.id)} className="text-xs px-2 py-1 border border-violet-200 text-violet-700 rounded hover:bg-violet-50">
-                            {s.team?'Reassign':'Assign'}
-                          </button>
-                        )}
-                        {s.team&&(
-                          <button disabled={saving===s.id} onClick={()=>remove(s.id)} className="text-xs px-2 py-1 border border-red-200 text-red-500 rounded hover:bg-red-50 disabled:opacity-40">
-                            <UserX className="w-3 h-3"/>
+                            {s.teams.length>0?'Add / reassign team':'Assign'}
                           </button>
                         )}
                       </div>

@@ -4,10 +4,12 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { formatDate } from '@/lib/utils'
 import { ReflectionForm } from '@/components/student/ReflectionForm'
 import { FileText, MessageSquare, ChevronDown } from 'lucide-react'
+import { courseSlots, pickActiveMembership } from '@/lib/team-select'
+import { CourseTabs } from '@/components/student/CourseTabs'
 
 export const metadata = { title: 'Reflections' }
 
-async function getTeamReflections(userId: string) {
+async function getTeamMemberships(userId: string) {
   const student = await prisma.studentProfile.findUnique({
     where: { userId },
     include: {
@@ -29,17 +31,25 @@ async function getTeamReflections(userId: string) {
             },
           },
         },
-        take: 1,
+        // A student can hold a separate team membership per DVL course.
       },
     },
   })
-  return student?.teamMembers?.[0]?.team ?? null
+  return student?.teamMembers ?? []
 }
 
-export default async function ReflectionsPage() {
+export default async function ReflectionsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ course?: string }>
+}) {
   const session = await getSession()
   if (!session?.id) return null
-  const team = await getTeamReflections(session.id)
+  const { course: requestedCourse } = await searchParams
+  const memberships = await getTeamMemberships(session.id)
+  const courses = courseSlots(memberships)
+  const team = pickActiveMembership(memberships, requestedCourse)?.team ?? null
+  const activeCourse = team?.course ?? requestedCourse ?? courses[0] ?? ''
 
   return (
     <div className="page-enter">
@@ -49,6 +59,7 @@ export default async function ReflectionsPage() {
         actions={team ? <ReflectionForm teamId={team.id} /> : undefined}
       />
       <div className="page-body space-y-5">
+        <CourseTabs courses={courses} active={activeCourse} basePath="/reflections" />
         {!team ? (
           <div className="card text-center py-20">
             <FileText className="w-10 h-10 mx-auto mb-4 opacity-20" />

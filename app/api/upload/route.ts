@@ -32,14 +32,18 @@ function slugify(input: string): string {
 }
 
 // Builds the standardized filename every deliverable is stored under in
-// Drive, e.g. "PIXEL-MINDS_BUSINESS-MODEL-CANVAS_2026-08-31.pdf".
+// Drive, e.g. "PIXEL-MINDS_MDT_BUSINESS-MODEL-CANVAS_2026-08-31.pdf".
+// Includes the course so a student running two projects (e.g. one MDT,
+// one MPB) — or a faculty member reviewing Drive directly — can always
+// tell which course a submission belongs to, even outside the dashboard.
 // Keeps the original file's extension; a date suffix means re-uploads
 // don't silently overwrite/shadow the previous submission in Drive.
-function buildStandardFileName(teamLabel: string, deliverableType: string, originalName: string): string {
+function buildStandardFileName(teamLabel: string, course: string, deliverableType: string, originalName: string): string {
   const extMatch = originalName.match(/\.[^.]+$/)
   const ext = extMatch ? extMatch[0].toLowerCase() : ''
   const datePart = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
-  return `${slugify(teamLabel)}_${slugify(deliverableType)}_${datePart}${ext}`
+  const courseTag = course ? `${slugify(course)}_` : ''
+  return `${slugify(teamLabel)}_${courseTag}${slugify(deliverableType)}_${datePart}${ext}`
 }
 
 export async function POST(req: NextRequest) {
@@ -64,7 +68,7 @@ export async function POST(req: NextRequest) {
 
   let driveFileId: string | null = null
   let driveFileUrl: string | null = null
-  const standardFileName = buildStandardFileName(team.ventureName ?? team.name, fileType ?? 'Other', file.name)
+  const standardFileName = buildStandardFileName(team.ventureName ?? team.name, team.course, fileType ?? 'Other', file.name)
 
   // Upload to Drive if team has a folder
   if (team.driveFolderId) {

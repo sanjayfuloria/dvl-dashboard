@@ -6,6 +6,9 @@ import { phaseLabel, phaseColor } from '@/lib/utils'
 import { Rocket, Edit3, Save, X, ExternalLink, FolderOpen, Loader2, AlertCircle } from 'lucide-react'
 import { apiFetch, ApiError } from '@/lib/api-client'
 
+const COURSE_COLORS: Record<string, string> = { MDT: '#5B4BD4', MPB: '#0D9488', B2B: '#F59E0B' }
+const FALLBACK_COLOR = '#6B7280'
+
 interface Team {
   id: string
   name: string
@@ -25,19 +28,24 @@ interface Team {
 }
 
 export default function VenturePage() {
-  const [team, setTeam] = useState<Team | null>(null)
+  const [teams, setTeams] = useState<Team[]>([])
+  const [activeCourse, setActiveCourse] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState<Partial<Team>>({})
 
+  const team = teams.find((t) => t.course === activeCourse) ?? teams[0] ?? null
+
   useEffect(() => {
     apiFetch('/api/teams/mine')
       .then((r) => r.json())
-      .then((data) => {
-        setTeam(data)
-        setForm(data ?? {})
+      .then((data: { team: Team | null; teams: Team[] }) => {
+        const list = data.teams ?? []
+        setTeams(list)
+        setActiveCourse(list[0]?.course ?? null)
+        setForm(list[0] ?? {})
         setLoading(false)
       })
       .catch((err) => {
@@ -45,6 +53,12 @@ export default function VenturePage() {
         setLoading(false)
       })
   }, [])
+
+  function switchCourse(course: string) {
+    setActiveCourse(course)
+    setEditing(false)
+    setForm(teams.find((t) => t.course === course) ?? {})
+  }
 
   async function handleSave() {
     if (!team) return
@@ -57,7 +71,7 @@ export default function VenturePage() {
         body: JSON.stringify(form),
       })
       const updated = await res.json()
-      setTeam(updated)
+      setTeams((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))
       setEditing(false)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not save your changes. Please try again.')
@@ -138,6 +152,31 @@ export default function VenturePage() {
       )}
 
       <div className="page-body space-y-6">
+        {teams.length > 1 && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
+              You're on {teams.length} teams:
+            </span>
+            {teams.map((t) => {
+              const color = COURSE_COLORS[t.course] ?? FALLBACK_COLOR
+              const isActive = t.course === activeCourse
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => switchCourse(t.course)}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors"
+                  style={{
+                    background: isActive ? color : 'white',
+                    color: isActive ? 'white' : color,
+                    borderColor: color,
+                  }}
+                >
+                  {t.course}
+                </button>
+              )
+            })}
+          </div>
+        )}
         {team ? (
           <>
             {/* Header card */}

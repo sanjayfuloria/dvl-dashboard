@@ -5,6 +5,8 @@ import { formatDate } from '@/lib/utils'
 import { Bot, Plus, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { AILogForm } from '@/components/student/AILogForm'
+import { courseSlots, pickActiveMembership } from '@/lib/team-select'
+import { CourseTabs } from '@/components/student/CourseTabs'
 
 export const metadata = { title: 'AI Build Log' }
 
@@ -14,7 +16,7 @@ const AI_TOOLS = [
   'Midjourney', 'Runway', 'Other',
 ]
 
-async function getTeamAndLogs(userId: string) {
+async function getTeamMemberships(userId: string) {
   const student = await prisma.studentProfile.findUnique({
     where: { userId },
     include: {
@@ -26,18 +28,26 @@ async function getTeamAndLogs(userId: string) {
             },
           },
         },
-        take: 1,
+        // A student can hold a separate team membership per DVL course.
       },
     },
   })
-  return student?.teamMembers?.[0]?.team ?? null
+  return student?.teamMembers ?? []
 }
 
-export default async function AILogPage() {
+export default async function AILogPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ course?: string }>
+}) {
   const session = await getSession()
   if (!session?.id) return null
 
-  const team = await getTeamAndLogs(session.id)
+  const { course: requestedCourse } = await searchParams
+  const memberships = await getTeamMemberships(session.id)
+  const courses = courseSlots(memberships)
+  const team = pickActiveMembership(memberships, requestedCourse)?.team ?? null
+  const activeCourse = team?.course ?? requestedCourse ?? courses[0] ?? ''
 
   // Tool usage summary
   const toolCounts: Record<string, number> = {}
@@ -60,6 +70,7 @@ export default async function AILogPage() {
         }
       />
       <div className="page-body space-y-6">
+        <CourseTabs courses={courses} active={activeCourse} basePath="/ai-log" />
         {/* Summary stats */}
         {team && team.aiLogs.length > 0 && (
           <div className="grid grid-cols-4 gap-4">

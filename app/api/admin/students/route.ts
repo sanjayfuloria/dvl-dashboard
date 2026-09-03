@@ -10,9 +10,10 @@ export async function GET() {
   const students = await prisma.studentProfile.findMany({
     include: {
       user: { select: { id: true, name: true, email: true } },
+      // No `take: 1` — a student can hold a team membership per DVL course
+      // (e.g. one MDT team and one MPB team at once), so return all of them.
       teamMembers: {
         include: { team: { select: { id: true, name: true, course: true } } },
-        take: 1,
       },
     },
     orderBy: { user: { name: 'asc' } },
@@ -26,8 +27,13 @@ export async function GET() {
     enrollNo: s.enrollNo,
     section: s.section,
     dvlCourse: s.dvlCourse,
-    team: s.teamMembers[0]?.team ?? null,
-    teamRole: s.teamMembers[0]?.role ?? null,
+    teams: s.teamMembers.map(tm => ({
+      teamMemberId: tm.id,
+      role: tm.role,
+      id: tm.team.id,
+      name: tm.team.name,
+      course: tm.team.course,
+    })),
   })))
 }
 
