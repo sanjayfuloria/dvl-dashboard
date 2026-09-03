@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, X, Loader2 } from 'lucide-react'
+import { Plus, X, Loader2, AlertCircle } from 'lucide-react'
+import { apiFetch, ApiError } from '@/lib/api-client'
 
 interface AILogFormProps {
   teamId: string
@@ -12,6 +13,7 @@ interface AILogFormProps {
 export function AILogForm({ teamId, tools }: AILogFormProps) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState({
     activity: '',
     toolUsed: '',
@@ -26,17 +28,18 @@ export function AILogForm({ teamId, tools }: AILogFormProps) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
+    setError(null)
     try {
-      const res = await fetch('/api/ai-log', {
+      await apiFetch('/api/ai-log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...form, teamId }),
       })
-      if (res.ok) {
-        setOpen(false)
-        setForm({ activity: '', toolUsed: '', purpose: '', promptSummary: '', outputGenerated: '', humanValidation: '', finalImplementation: '' })
-        router.refresh()
-      }
+      setOpen(false)
+      setForm({ activity: '', toolUsed: '', purpose: '', promptSummary: '', outputGenerated: '', humanValidation: '', finalImplementation: '' })
+      router.refresh()
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Something went wrong while saving. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -58,7 +61,7 @@ export function AILogForm({ teamId, tools }: AILogFormProps) {
 
   return (
     <>
-      <button onClick={() => setOpen(true)} className="btn-primary">
+      <button onClick={() => { setError(null); setOpen(true) }} className="btn-primary">
         <Plus className="w-4 h-4" /> Log AI usage
       </button>
 
@@ -110,8 +113,16 @@ export function AILogForm({ teamId, tools }: AILogFormProps) {
               {field('humanValidation', 'Human validation', 'How did you verify the output?')}
               {field('finalImplementation', 'Final implementation', 'What did you actually use / how did you adapt the output?')}
 
+              {error && (
+                <div className="flex items-start gap-2 p-3 rounded-lg text-sm"
+                     style={{ background: 'rgba(220,38,38,0.08)', color: '#b91c1c' }}>
+                  <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
+
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setOpen(false)} className="btn-secondary flex-1">
+                <button type="button" onClick={() => { setError(null); setOpen(false) }} className="btn-secondary flex-1">
                   Cancel
                 </button>
                 <button type="submit" disabled={loading} className="btn-primary flex-1">

@@ -21,6 +21,27 @@ const FOLDER_MAP: Record<string, string> = {
   'Other': 'Deliverables',
 }
 
+// Turns "Pixel Minds", "Business Model Canvas" into a filesystem/Drive-safe
+// slug, e.g. "PIXEL-MINDS". Used to build a consistent Drive filename.
+function slugify(input: string): string {
+  return input
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+// Builds the standardized filename every deliverable is stored under in
+// Drive, e.g. "PIXEL-MINDS_BUSINESS-MODEL-CANVAS_2026-08-31.pdf".
+// Keeps the original file's extension; a date suffix means re-uploads
+// don't silently overwrite/shadow the previous submission in Drive.
+function buildStandardFileName(teamLabel: string, deliverableType: string, originalName: string): string {
+  const extMatch = originalName.match(/\.[^.]+$/)
+  const ext = extMatch ? extMatch[0].toLowerCase() : ''
+  const datePart = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
+  return `${slugify(teamLabel)}_${slugify(deliverableType)}_${datePart}${ext}`
+}
+
 export async function POST(req: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -43,6 +64,7 @@ export async function POST(req: NextRequest) {
 
   let driveFileId: string | null = null
   let driveFileUrl: string | null = null
+  const standardFileName = buildStandardFileName(team.ventureName ?? team.name, fileType ?? 'Other', file.name)
 
   // Upload to Drive if team has a folder
   if (team.driveFolderId) {
@@ -52,7 +74,7 @@ export async function POST(req: NextRequest) {
 
     const driveResult = await uploadFileToDrive(
       targetFolderId,
-      file.name,
+      standardFileName,
       buffer,
       file.type || 'application/octet-stream'
     )
@@ -63,11 +85,12 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Save to database
+  // Save to database under the standardized Drive filename, so the name
+  // shown in-app always matches what's actually in the team's Drive folder.
   const workspaceFile = await prisma.workspaceFile.create({
     data: {
       teamId,
-      name: file.name,
+      name: standardFileName,
       type: fileType ?? 'Other',
       driveFileId,
       fileUrl: driveFileUrl,

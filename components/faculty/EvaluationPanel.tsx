@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Star, Loader2, ChevronDown, ChevronUp } from 'lucide-react'
+import { Star, Loader2, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react'
+import { apiFetch, ApiError } from '@/lib/api-client'
 
 interface EvaluationCriteria {
   key: string
@@ -41,6 +42,7 @@ export function EvaluationPanel({ team, facultyId }: Props) {
   const [scores, setScores] = useState<Record<string, number>>({})
   const [feedback, setFeedback] = useState('')
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
   const criteria = PHASE_CRITERIA[team.currentPhase] ?? []
@@ -50,21 +52,27 @@ export function EvaluationPanel({ team, facultyId }: Props) {
 
   async function handleSubmit() {
     setLoading(true)
-    await fetch('/api/evaluations', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        teamId: team.id,
-        phase: team.currentPhase,
-        evaluatorType: 'FACULTY',
-        facultyId,
-        feedback,
-        ...scores,
-      }),
-    })
-    setLoading(false)
-    setOpen(false)
-    router.refresh()
+    setError(null)
+    try {
+      await apiFetch('/api/evaluations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          teamId: team.id,
+          phase: team.currentPhase,
+          evaluatorType: 'FACULTY',
+          facultyId,
+          feedback,
+          ...scores,
+        }),
+      })
+      setOpen(false)
+      router.refresh()
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not save this evaluation. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const avg = Object.values(scores).length
@@ -136,8 +144,16 @@ export function EvaluationPanel({ team, facultyId }: Props) {
             </div>
           )}
 
+          {error && (
+            <div className="flex items-start gap-2 p-3 rounded-lg text-sm"
+                 style={{ background: 'rgba(220,38,38,0.08)', color: '#b91c1c' }}>
+              <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
           <div className="flex gap-3">
-            <button onClick={() => setOpen(false)} className="btn-secondary flex-1">Cancel</button>
+            <button onClick={() => { setError(null); setOpen(false) }} className="btn-secondary flex-1">Cancel</button>
             <button
               onClick={handleSubmit}
               disabled={loading || Object.keys(scores).length < criteria.length}

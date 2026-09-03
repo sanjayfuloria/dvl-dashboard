@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { phaseLabel, phaseColor } from '@/lib/utils'
-import { Rocket, Edit3, Save, X, ExternalLink, FolderOpen, Loader2 } from 'lucide-react'
+import { Rocket, Edit3, Save, X, ExternalLink, FolderOpen, Loader2, AlertCircle } from 'lucide-react'
+import { apiFetch, ApiError } from '@/lib/api-client'
 
 interface Team {
   id: string
@@ -28,33 +29,41 @@ export default function VenturePage() {
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState<Partial<Team>>({})
 
   useEffect(() => {
-    fetch('/api/teams/mine')
+    apiFetch('/api/teams/mine')
       .then((r) => r.json())
       .then((data) => {
         setTeam(data)
         setForm(data ?? {})
         setLoading(false)
       })
-      .catch(() => setLoading(false))
+      .catch((err) => {
+        setError(err instanceof ApiError ? err.message : 'Could not load your venture. Please refresh the page.')
+        setLoading(false)
+      })
   }, [])
 
   async function handleSave() {
     if (!team) return
     setSaving(true)
-    const res = await fetch(`/api/teams/${team.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    })
-    if (res.ok) {
+    setError(null)
+    try {
+      const res = await apiFetch(`/api/teams/${team.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
       const updated = await res.json()
       setTeam(updated)
       setEditing(false)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not save your changes. Please try again.')
+    } finally {
+      setSaving(false)
     }
-    setSaving(false)
   }
 
   const field = (key: keyof Team, label: string, placeholder: string, multiline = false) => (
@@ -119,6 +128,14 @@ export default function VenturePage() {
           ) : null
         }
       />
+
+      {error && (
+        <div className="mx-6 mt-4 flex items-start gap-2 p-3 rounded-lg text-sm"
+             style={{ background: 'rgba(220,38,38,0.08)', color: '#b91c1c' }}>
+          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
 
       <div className="page-body space-y-6">
         {team ? (

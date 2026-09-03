@@ -105,6 +105,36 @@ export default async function TeamDetailPage({ params }: { params: Promise<{ tea
           </div>
         </div>
 
+        {team.aiLogs.length > 0 && (
+          <div className="card">
+            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold">
+              <Bot className="w-4 h-4" /> AI Build Log <span className="tag tag-gray font-normal">{team.aiLogs.length} entries</span>
+            </h3>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {Object.entries(toolCounts).map(([tool, count]) => (
+                <span key={tool} className="tag tag-gray text-xs">{tool} × {count}</span>
+              ))}
+            </div>
+            <div className="space-y-2">
+              {team.aiLogs.slice(0, 5).map(l => (
+                <div key={l.id} className="p-3 rounded-lg" style={{ background: 'var(--surface-raised)' }}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium">{l.activity}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="tag tag-gray text-xs">{l.toolUsed}</span>
+                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{formatDate(l.loggedAt)}</span>
+                    </div>
+                  </div>
+                  {l.purpose && <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{l.purpose}</p>}
+                </div>
+              ))}
+              {team.aiLogs.length > 5 && (
+                <p className="text-xs text-center pt-1" style={{ color: 'var(--text-muted)' }}>+ {team.aiLogs.length - 5} more entries</p>
+              )}
+            </div>
+          </div>
+        )}
+
         {facultyProfile && (
           <EvaluationPanel
             team={{ id: team.id, currentPhase: team.currentPhase, evaluations: team.evaluations }}

@@ -3,13 +3,13 @@ import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import * as jose from 'jose'
 
-const BASE = 'https://www.sanjayfuloria.tech'
 
 function getSecret() {
   return new TextEncoder().encode(process.env.AUTH_SECRET!)
 }
 
 export async function POST(req: NextRequest) {
+  const BASE = process.env.NEXT_PUBLIC_BASE_URL!
   try {
     let email = ''
     let password = ''
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!email || !password) {
-      return NextResponse.redirect(`${BASE}/dvl/login?error=missing`, { status: 302 })
+      return NextResponse.redirect(`${BASE}/login?error=missing`, { status: 302 })
     }
 
     const user = await prisma.user.findUnique({
@@ -35,12 +35,12 @@ export async function POST(req: NextRequest) {
     })
 
     if (!user || !user.password) {
-      return NextResponse.redirect(`${BASE}/dvl/login?error=invalid`, { status: 302 })
+      return NextResponse.redirect(`${BASE}/login?error=invalid`, { status: 302 })
     }
 
     const valid = await bcrypt.compare(password, user.password.hash)
     if (!valid) {
-      return NextResponse.redirect(`${BASE}/dvl/login?error=invalid`, { status: 302 })
+      return NextResponse.redirect(`${BASE}/login?error=invalid`, { status: 302 })
     }
 
     const token = await new jose.SignJWT({ userId: user.id })
@@ -49,13 +49,13 @@ export async function POST(req: NextRequest) {
       .sign(getSecret())
 
     const redirects: Record<string, string> = {
-      ADMIN: `${BASE}/dvl/admin/dashboard`,
-      FACULTY: `${BASE}/dvl/faculty/dashboard`,
-      MENTOR: `${BASE}/dvl/mentor/dashboard`,
-      STUDENT: `${BASE}/dvl/dashboard`,
+      ADMIN: `${BASE}/admin/dashboard`,
+      FACULTY: `${BASE}/faculty/dashboard`,
+      MENTOR: `${BASE}/mentor/dashboard`,
+      STUDENT: `${BASE}/dashboard`,
     }
 
-    const destination = redirects[user.role] ?? `${BASE}/dvl/dashboard`
+    const destination = redirects[user.role] ?? `${BASE}/dashboard`
     const response = NextResponse.redirect(destination, { status: 302 })
     response.cookies.set('dvl_session', token, {
       httpOnly: true,
@@ -68,6 +68,6 @@ export async function POST(req: NextRequest) {
     return response
   } catch (err) {
     console.error('Login error:', err)
-    return NextResponse.redirect(`${BASE}/dvl/login?error=server`, { status: 302 })
+    return NextResponse.redirect(`${BASE}/login?error=server`, { status: 302 })
   }
 }

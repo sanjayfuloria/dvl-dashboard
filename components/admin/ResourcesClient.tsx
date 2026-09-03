@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, X, Loader2, Trash2, ExternalLink } from 'lucide-react'
+import { Plus, X, Loader2, Trash2, ExternalLink, AlertCircle } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
+import { apiFetch, ApiError } from '@/lib/api-client'
 
 const RESOURCE_TYPES = [
   'READING', 'CASE', 'FRAMEWORK', 'TEMPLATE',
@@ -30,6 +31,7 @@ export function ResourcesClient({ resources: initial }: { resources: Resource[] 
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [resources, setResources] = useState(initial)
+  const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState({
     title: '', type: 'READING', description: '',
     fileUrl: '', tags: '', course: '',
@@ -39,29 +41,37 @@ export function ResourcesClient({ resources: initial }: { resources: Resource[] 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
-    const res = await fetch('/api/resources', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...form,
-        tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
-        course: form.course || undefined,
-        fileUrl: form.fileUrl || undefined,
-      }),
-    })
-    if (res.ok) {
+    setError(null)
+    try {
+      const res = await apiFetch('/api/resources', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...form,
+          tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
+          course: form.course || undefined,
+          fileUrl: form.fileUrl || undefined,
+        }),
+      })
       const created = await res.json()
       setResources(r => [created, ...r])
       setOpen(false)
       setForm({ title: '', type: 'READING', description: '', fileUrl: '', tags: '', course: '' })
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not save this resource. Please try again.')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   async function handleDelete(id: string) {
     if (!confirm('Delete this resource?')) return
-    await fetch(`/api/resources/${id}`, { method: 'DELETE' })
-    setResources(r => r.filter(x => x.id !== id))
+    try {
+      await apiFetch(`/api/resources/${id}`, { method: 'DELETE' })
+      setResources(r => r.filter(x => x.id !== id))
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : 'Could not delete this resource. Please try again.')
+    }
   }
 
   return (
@@ -161,8 +171,15 @@ export function ResourcesClient({ resources: initial }: { resources: Resource[] 
                   onChange={e => setForm(f => ({ ...f, tags: e.target.value }))}
                   placeholder="BMC, ideation, product" />
               </div>
+              {error && (
+                <div className="flex items-start gap-2 p-3 rounded-lg text-sm"
+                     style={{ background: 'rgba(220,38,38,0.08)', color: '#b91c1c' }}>
+                  <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setOpen(false)} className="btn-secondary flex-1">Cancel</button>
+                <button type="button" onClick={() => { setError(null); setOpen(false) }} className="btn-secondary flex-1">Cancel</button>
                 <button type="submit" disabled={loading} className="btn-primary flex-1">
                   {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</> : 'Add resource'}
                 </button>

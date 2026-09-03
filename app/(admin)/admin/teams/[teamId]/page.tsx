@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { phaseLabel, phaseColor, healthLabel, healthColor, statusColor, formatDate } from '@/lib/utils'
 import { Users, CheckSquare, Bot, Calendar, ChevronLeft, FolderOpen, FileText, ExternalLink, MessageSquare, Award } from 'lucide-react'
+import { PhaseAdvanceControl } from '@/components/admin/PhaseAdvanceControl'
 import Link from 'next/link'
 
 async function getTeamDetail(teamId: string) {
@@ -50,6 +51,7 @@ export default async function AdminTeamDetailPage({ params }: { params: Promise<
               <span className={`text-sm font-medium ${healthColor(team.health)}`}>{healthLabel(team.health)}</span>
               <span className="tag tag-gray">{team.course}</span>
               {team.sector && <span className="tag tag-gray">{team.sector}</span>}
+              <PhaseAdvanceControl teamId={team.id} currentPhase={team.currentPhase} />
               {team.driveFolderId && (
                 <a href={`https://drive.google.com/drive/folders/${team.driveFolderId}`} target="_blank" rel="noopener noreferrer"
                    className="ml-auto text-xs text-brand flex items-center gap-1 hover:underline">
