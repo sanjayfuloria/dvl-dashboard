@@ -66,9 +66,9 @@ export function AILogForm({ teamId, tools }: AILogFormProps) {
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 py-8"
              style={{ background: 'rgba(0,0,0,0.4)' }}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl my-auto">
             <div className="flex items-center justify-between p-6 border-b" style={{ borderColor: 'var(--border)' }}>
               <div>
                 <h2 className="text-lg font-semibold">Log AI usage</h2>
