@@ -247,6 +247,7 @@ export default async function AdminTeamDetailPage({ params }: { params: Promise<
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm font-medium">{l.activity}</span>
                     <div className="flex items-center gap-2">
+                      {l.archivedAt && <span className="tag tag-red text-xs">Archived</span>}
                       <span className="tag tag-gray text-xs">{l.toolUsed}</span>
                       <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{formatDate(l.loggedAt)}</span>
                     </div>

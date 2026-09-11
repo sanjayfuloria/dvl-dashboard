@@ -292,6 +292,31 @@ model AIBuildLog {
   humanValidation  String?
   finalImplementation String?
   loggedAt         DateTime @default(now())
+
+  createdByName    String?
+  editedAt         DateTime?
+  editedByName     String?
+  archivedAt       DateTime?
+  archivedByName   String?
+
+  versions         AIBuildLogVersion[]
+}
+
+// Snapshot of an AIBuildLog entry taken immediately before an edit, so past
+// versions remain viewable after a student updates an entry.
+model AIBuildLogVersion {
+  id               String     @id @default(cuid())
+  aiBuildLogId     String
+  aiBuildLog       AIBuildLog @relation(fields: [aiBuildLogId], references: [id], onDelete: Cascade)
+  activity         String
+  toolUsed         String
+  purpose          String?
+  promptSummary    String?
+  outputGenerated  String?
+  humanValidation  String?
+  finalImplementation String?
+  editedByName     String?
+  editedAt         DateTime   @default(now())
 }
 
 // ─── Reflections ─────────────────────────────────────────────────────────────

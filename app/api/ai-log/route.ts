@@ -22,7 +22,9 @@ export async function POST(req: NextRequest) {
   const data = schema.safeParse(body)
   if (!data.success) return NextResponse.json({ error: 'Invalid data' }, { status: 400 })
 
-  const log = await prisma.aIBuildLog.create({ data: data.data })
+  const log = await prisma.aIBuildLog.create({
+    data: { ...data.data, createdByName: session.name ?? null },
+  })
   return NextResponse.json(log, { status: 201 })
 }
 
@@ -35,7 +37,7 @@ export async function GET(req: NextRequest) {
   if (!teamId) return NextResponse.json({ error: 'teamId required' }, { status: 400 })
 
   const logs = await prisma.aIBuildLog.findMany({
-    where: { teamId },
+    where: { teamId, archivedAt: null },
     orderBy: { loggedAt: 'desc' },
   })
   return NextResponse.json(logs)

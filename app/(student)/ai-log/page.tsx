@@ -1,10 +1,10 @@
 import { getSession } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { PageHeader } from '@/components/layout/PageHeader'
-import { formatDate } from '@/lib/utils'
 import { Bot, Plus, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { AILogForm } from '@/components/student/AILogForm'
+import { AILogEntry } from '@/components/student/AILogEntry'
 import { courseSlots, pickActiveMembership } from '@/lib/team-select'
 import { CourseTabs } from '@/components/student/CourseTabs'
 
@@ -24,7 +24,11 @@ async function getTeamMemberships(userId: string) {
         include: {
           team: {
             include: {
-              aiLogs: { orderBy: { loggedAt: 'desc' } },
+              aiLogs: {
+                where: { archivedAt: null },
+                orderBy: { loggedAt: 'desc' },
+                include: { versions: { orderBy: { editedAt: 'desc' } } },
+              },
             },
           },
         },
@@ -115,44 +119,7 @@ export default async function AILogPage({
             team.aiLogs.length > 0 ? (
               <div className="space-y-4">
                 {team.aiLogs.map((log) => (
-                  <div key={log.id} className="p-4 rounded-xl border"
-                       style={{ borderColor: 'var(--border)' }}>
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <span className="tag-teal tag">{log.toolUsed}</span>
-                        <span className="text-sm font-medium">{log.activity}</span>
-                      </div>
-                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                        {formatDate(log.loggedAt)}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      {log.purpose && (
-                        <div>
-                          <p className="text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Purpose</p>
-                          <p>{log.purpose}</p>
-                        </div>
-                      )}
-                      {log.promptSummary && (
-                        <div>
-                          <p className="text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Prompt summary</p>
-                          <p>{log.promptSummary}</p>
-                        </div>
-                      )}
-                      {log.outputGenerated && (
-                        <div>
-                          <p className="text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Output generated</p>
-                          <p>{log.outputGenerated}</p>
-                        </div>
-                      )}
-                      {log.humanValidation && (
-                        <div>
-                          <p className="text-xs font-medium mb-1" style={{ color: 'var(--text-muted)' }}>Human validation</p>
-                          <p>{log.humanValidation}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <AILogEntry key={log.id} log={log} tools={AI_TOOLS} />
                 ))}
               </div>
             ) : (
