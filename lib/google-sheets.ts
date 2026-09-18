@@ -1,4 +1,4 @@
-import { GoogleAuth } from 'google-auth-library'
+import { getGoogleAccessToken } from './google-auth'
 
 const SHEET_NAME = 'Uploads'
 const HEADER = [
@@ -6,21 +6,8 @@ const HEADER = [
   'Deliverable', 'File Name', 'Status', 'Submitted At', 'Drive Link',
 ]
 
-function getAuth() {
-  return new GoogleAuth({
-    credentials: {
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_SERVICE_ACCOUNT_KEY?.replace(/\\n/g, '\n'),
-    },
-    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-  })
-}
-
 async function getAccessToken(): Promise<string> {
-  const auth = getAuth()
-  const client = await auth.getClient()
-  const token = await client.getAccessToken()
-  return token.token!
+  return getGoogleAccessToken()
 }
 
 function getSpreadsheetId(): string | null {

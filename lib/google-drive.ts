@@ -1,20 +1,7 @@
-import { GoogleAuth } from 'google-auth-library'
-
-function getAuth() {
-  return new GoogleAuth({
-    credentials: {
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_SERVICE_ACCOUNT_KEY?.replace(/\\n/g, '\n'),
-    },
-    scopes: ['https://www.googleapis.com/auth/drive'],
-  })
-}
+import { getGoogleAccessToken } from './google-auth'
 
 async function getAccessToken(): Promise<string> {
-  const auth = getAuth()
-  const client = await auth.getClient()
-  const token = await client.getAccessToken()
-  return token.token!
+  return getGoogleAccessToken()
 }
 
 export async function createTeamDriveFolder(teamName: string, ventureName: string, course?: string): Promise<string | null> {
@@ -126,7 +113,17 @@ export async function uploadFileToDrive(
         body,
       }
     )
-    return await res.json()
+    const result = await res.json()
+    // The Drive API returns 200 with a JSON *error* body (not a thrown
+    // exception, not a non-JSON response) on failures like permission
+    // denied or an invalid parent folder. Without this check, those
+    // failures were silently treated as success — the caller saw a
+    // truthy object and never noticed `id`/`webViewLink` were missing.
+    if (!res.ok || !result?.id) {
+      console.error('Drive upload rejected:', res.status, JSON.stringify(result))
+      return null
+    }
+    return result
   } catch (err) {
     console.error('Drive upload failed:', err)
     return null

@@ -98,6 +98,18 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Don't record a "submitted" deliverable when the file never actually
+  // reached Drive — that previously left students believing an upload
+  // had gone through when nothing was saved anywhere. Surface the real
+  // failure instead, before any DB record is created.
+  if (!driveFileId) {
+    console.error(`Upload aborted — file never reached Drive. teamId=${teamId} type=${fileType} driveFolderId=${team.driveFolderId ?? 'none'}`)
+    return NextResponse.json(
+      { error: 'Could not save the file to Google Drive. Please try again, or contact your faculty guide if this keeps happening.' },
+      { status: 502 }
+    )
+  }
+
   // Save to database under the standardized Drive filename, so the name
   // shown in-app always matches what's actually in the team's Drive folder.
   const workspaceFile = await prisma.workspaceFile.create({
