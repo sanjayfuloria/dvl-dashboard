@@ -6,6 +6,7 @@ import { CheckSquare, CheckCircle2, Circle, Clock, FileText } from 'lucide-react
 import { FileUpload } from '@/components/shared/FileUpload'
 import { courseSlots, pickActiveMembership } from '@/lib/team-select'
 import { CourseTabs } from '@/components/student/CourseTabs'
+import { getDriveFolderLink } from '@/lib/google-drive'
 
 export const metadata = { title: 'Milestones' }
 
@@ -64,6 +65,12 @@ export default async function MilestonesPage({
           <div className="card flex items-center gap-2 py-3">
             <span className="text-sm" style={{ color: 'var(--text-muted)' }}>Your team code:</span>
             <span className="tag-purple tag text-sm font-semibold">{team.code}</span>
+            {team.driveFolderId && (
+              <a href={getDriveFolderLink(team.driveFolderId)} target="_blank" rel="noopener noreferrer"
+                 className="text-xs ml-auto" style={{ color: 'var(--dvl-teal)' }}>
+                📁 Open your team's Drive folder
+              </a>
+            )}
           </div>
         )}
         {!team ? (
