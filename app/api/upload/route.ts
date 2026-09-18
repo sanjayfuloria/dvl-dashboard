@@ -2,6 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { uploadFileToDrive, getOrCreateSubfolder } from '@/lib/google-drive'
+import { syncUploadToSheet } from '@/lib/google-sheets'
+
+// Team codes look like MPBTA1 / MPBIA1 — course, T(eam)/I(ndividual), section, number.
+function parseTeamCode(code: string | null): { course: string; type: 'Team' | 'Individual'; section: string } | null {
+  if (!code) return null
+  const m = code.match(/^([A-Z]+)([TI])([A-Z])(\d+)$/)
+  if (!m) return null
+  return { course: m[1], type: m[2] === 'I' ? 'Individual' : 'Team', section: m[3] }
+}
 
 const FOLDER_MAP: Record<string, string> = {
   'Problem Brief': 'Deliverables',
@@ -152,6 +161,23 @@ export async function POST(req: NextRequest) {
         }
       })
     }
+  }
+
+  // Live-sync this upload into the master Google Sheet, keyed by team code.
+  const codeInfo = parseTeamCode(team.code)
+  if (codeInfo) {
+    await syncUploadToSheet({
+      teamCode: team.code!,
+      teamName: team.ventureName ?? team.name,
+      course: codeInfo.course,
+      section: codeInfo.section,
+      type: codeInfo.type,
+      deliverable: fileType ?? file.name,
+      fileName: standardFileName,
+      status: 'SUBMITTED',
+      submittedAt: new Date().toISOString(),
+      driveLink: driveFileUrl ?? '',
+    })
   }
 
   return NextResponse.json({

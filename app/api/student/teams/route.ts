@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { createTeamDriveFolder } from '@/lib/google-drive'
+import { generateTeamCode } from '@/lib/team-code'
 
 export async function GET(req: NextRequest) {
   const session = await getSession()
@@ -31,7 +32,7 @@ export async function GET(req: NextRequest) {
   for (const tm of sp.teamMembers) {
     const t = tm.team
     myTeams[t.course] = {
-      id: t.id, name: t.name,
+      id: t.id, name: t.name, code: t.code,
       isIndividual: tm.role === 'Individual',
       course: t.course, memberCount: t.members.length,
       teamMemberId: tm.id, role: tm.role,
@@ -113,9 +114,11 @@ export async function POST(req: NextRequest) {
     let driveFolderId: string | null = null
     if (process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID)
       driveFolderId = await createTeamDriveFolder(teamName.trim(), teamName.trim(), targetCourse)
+    const code = await generateTeamCode(targetCourse, sp.section, true)
     const t = await prisma.team.create({
       data: {
         name: teamName.trim(),
+        code,
         course: targetCourse as any,
         driveFolderId,
         members: { create: { studentProfileId: sp.id, role: 'Individual' } }
@@ -143,9 +146,10 @@ export async function POST(req: NextRequest) {
     let driveFolderId: string | null = null
     if (process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID)
       driveFolderId = await createTeamDriveFolder(teamName.trim(), teamName.trim(), targetCourse)
+    const code = await generateTeamCode(targetCourse, sp.section, false)
     const t = await prisma.team.create({
       data: {
-        name: teamName.trim(), course: targetCourse as any,
+        name: teamName.trim(), code, course: targetCourse as any,
         driveFolderId,
         members: { create: { studentProfileId: sp.id, role: 'Team Lead' } }
       }

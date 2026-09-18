@@ -3,6 +3,7 @@ import { getSession } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { createTeamDriveFolder } from '@/lib/google-drive'
+import { generateTeamCode } from '@/lib/team-code'
 
 const createSchema = z.object({
   name: z.string().min(1),
@@ -46,17 +47,25 @@ export async function POST(req: NextRequest) {
   })
 
   // Add members
+  let firstMemberSection: string | null = null
   if (memberUserIds?.length) {
     const profiles = await prisma.studentProfile.findMany({
       where: { userId: { in: memberUserIds } },
     })
+    firstMemberSection = profiles[0]?.section ?? null
     await prisma.teamMember.createMany({
       data: profiles.map((p) => ({ teamId: team.id, studentProfileId: p.id })),
       skipDuplicates: true,
     })
   }
 
-  return NextResponse.json(team, { status: 201 })
+  // Assign the team's code now that we know its section (from its first
+  // member, if any were added). Teams admins create here are always
+  // multi-member/group teams, never individual projects.
+  const code = await generateTeamCode(teamData.course, firstMemberSection, false)
+  const updatedTeam = await prisma.team.update({ where: { id: team.id }, data: { code } })
+
+  return NextResponse.json(updatedTeam, { status: 201 })
 }
 
 export async function GET(req: NextRequest) {

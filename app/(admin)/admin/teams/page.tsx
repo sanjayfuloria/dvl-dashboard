@@ -46,6 +46,7 @@ export default async function AdminTeamsPage() {
           <table className="data-table">
             <thead>
               <tr>
+                <th>Code</th>
                 <th>Venture</th>
                 <th>Course</th>
                 <th>Phase</th>
@@ -61,6 +62,7 @@ export default async function AdminTeamsPage() {
             <tbody>
               {teams.map((team) => (
                 <tr key={team.id}>
+                  <td className="text-sm font-semibold">{team.code ?? '—'}</td>
                   <td>
                     <Link href={`/admin/teams/${team.id}`} className="hover:underline">
                       <p className="font-medium">{team.ventureName ?? team.name}</p>

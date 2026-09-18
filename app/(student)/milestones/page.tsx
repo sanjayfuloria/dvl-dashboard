@@ -60,6 +60,12 @@ export default async function MilestonesPage({
       />
       <div className="page-body space-y-8">
         <CourseTabs courses={courses} active={activeCourse} basePath="/milestones" />
+        {team?.code && (
+          <div className="card flex items-center gap-2 py-3">
+            <span className="text-sm" style={{ color: 'var(--text-muted)' }}>Your team code:</span>
+            <span className="tag-purple tag text-sm font-semibold">{team.code}</span>
+          </div>
+        )}
         {!team ? (
           <div className="card text-center py-20">
             <CheckSquare className="w-10 h-10 mx-auto mb-4 opacity-20" />

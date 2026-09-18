@@ -142,6 +142,7 @@ enum ProjectHealth {
 model Team {
   id              String        @id @default(cuid())
   name            String
+  code            String?       @unique // e.g. MPBTA1 (team), MPBIA1 (individual)
   ventureName     String?
   course          Course
   sector          String?
