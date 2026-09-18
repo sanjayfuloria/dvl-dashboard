@@ -173,8 +173,8 @@ export default async function MilestonesPage({
                               </div>
                             )}
 
-                            {/* Upload button for active phase */}
-                            {phaseActive && submitted?.status !== 'APPROVED' && (
+                            {/* Upload allowed in any phase, not just the active one */}
+                            {submitted?.status !== 'APPROVED' && (
                               <FileUpload
                                 teamId={team.id}
                                 fileType={name}
